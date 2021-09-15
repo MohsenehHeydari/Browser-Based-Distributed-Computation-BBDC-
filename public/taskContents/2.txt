@@ -1,0 +1,7 @@
+     let result={};
+   let value=String(data['value']);
+   let key=data['key'];
+    let array_values=value.split(',');
+   result[key]=array_values.reduce((a,b)=>+a+(+b));
+
+    return result;

@@ -10,8 +10,8 @@ const mix = require('laravel-mix');
  | file for the application as well as bundling up all the JS files.
  |
  */
-
-mix.js('resources/js/app.js', 'public/js')
-    .postCss('resources/css/app.css', 'public/css', [
-        //
-    ]);
+// mix.js('resources/assets/js/app.js', 'public/js').vue();
+// mix.js('resources/assets/js/panel.js', 'public/js').vue();
+mix.js('resources/js/owner.js', 'public/js').vue();
+mix.js('resources/js/worker.js', 'public/js').vue();
+mix.js('resources/js/auth.js', 'public/js').vue();

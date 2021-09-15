@@ -1,16 +1,10 @@
 let app = require('express')(); // an instance of express framework
 let socket = require('socket.io');
 let redis=require('redis');
-let redisClient=redis.createClient();
-let testObject = {
-    name:'ali',
-    id: 1,
-    family:'alavi'
-}
+let redisClient=redis.createClient({ detect_buffers: true });
 
-redisClient.set('testJson',JSON.stringify(testObject));
+
 let http = require('http'); //this is in node.js by default
-const { type } = require('jquery');
 let server = http.Server(app); // an instance of server 
 
 const port = 3000;
@@ -24,14 +18,7 @@ server.listen(port, () => {
 let io = socket(server); // a socket server is running
 
 
-
-app.get('/', (req, resp) => {
-    resp.send('hello word!')
-});
-
-
 redisClient.subscribe('newJob');
-
 redisClient.on('message',(channel,message)=>{
     console.log(channel,message);
     //notify idle workers with the same job_id to have new job
@@ -68,15 +55,10 @@ io.on('connection', (socket) => {
                 device_id:data.device_id,
                 working_status:data.working_status
                }];
-            let user = data.user_id;
             users[data.user_id] = data;
-            // users[user['user_name']] = data.user_name;
-            // users[data.user_id.job_id] = data.job_id;
-            // users[data.user_id.socket] = data.socket;
             
 
         }
-        console.log(JSON.stringify(users),'new connection added');
        
         updateOnlineUsers();
         

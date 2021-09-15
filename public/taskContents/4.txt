@@ -1,0 +1,22 @@
+let result={};
+                let value=String(data['value']);
+                let key=data['key'];
+                let array_values=value.split(',');
+
+                let temp={};
+                array_values.forEach((element)=>{
+                    let [tempKey,value] = element.split(':');
+                    if(temp[tempKey] === undefined){
+                        temp[tempKey]=[];
+                    }
+                    temp[tempKey].push(value);
+                })
+
+                let resultValue = 0;
+                Object.keys(temp).forEach((key)=>{
+                    resultValue += temp[key].reduce((a,b)=> a*b);
+                    
+                })
+                result[key] = resultValue; 
+                return result;
+                

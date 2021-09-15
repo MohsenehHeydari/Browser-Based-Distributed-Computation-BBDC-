@@ -1,0 +1,25 @@
+let result={}
+
+                let splitData=data.split(':');
+                let[matrixType,rowNumber,columnNumber,n]=splitData[0].split(',');
+                let element=splitData[1];
+
+                //console.log(splitData,' splitData');
+                //console.log(matrixType, ' matrix type')
+                //console.log(rowNumber, ' row number')
+                //console.log( n, ' n')
+                console.log( element, ' row data')
+
+              for(let i=1;i<=n;i++){
+                        let key=null;
+                        let value=null;
+                        if(matrixType === 'A'){
+                            key=rowNumber+','+i;
+                            value=columnNumber+ ':'+ element;
+                        }else{
+                            key=i+','+columnNumber;
+                            value=rowNumber+':'+ element;
+                        }
+                        result[key]=value;
+                 }
+                 return result;
