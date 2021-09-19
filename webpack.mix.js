@@ -15,3 +15,11 @@ const mix = require('laravel-mix');
 mix.js('resources/js/owner.js', 'public/js').vue();
 mix.js('resources/js/worker.js', 'public/js').vue();
 mix.js('resources/js/auth.js', 'public/js').vue();
+
+// mix.browserSync({
+//     proxy:'bbmr.test',
+//     files: [
+//         [
+//             'resources/**/*'
+//         ]
+//     ]});

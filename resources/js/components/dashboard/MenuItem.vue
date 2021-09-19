@@ -3,9 +3,10 @@
     <li class="nav-item" :class="$route.meta.resource === route.meta.resource && isMainMenu ? 'menu-open':''">
     
         <!-- like <a> create a link to a address that vue-router makes -->
-        <router-link :to="isMainMenu?route.path:{name:route.name}" class="nav-link" :exact-active-class="'active'"> <!-- -->
+        <router-link :to="isMainMenu?route.path:{name:route.name}" class="nav-link" :exact-active-class="'active'"> <!--some routes doesnt have name -->
         <i class="nav-icon" :class="route.meta.icon"></i>
         <p>{{route.meta.title}}</p>
+        
         <!-- {{route.children}} -->
         <i v-if="hasChildren" class="right fas fa-angle-left"></i>
         </router-link>
