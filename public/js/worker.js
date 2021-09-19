@@ -2903,7 +2903,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     startSocketConnection: function startSocketConnection() {
       var _this = this;
 
-      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("http://localhost:3000", {
+      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("http://192.168.1.109:300", {
         transports: ["websocket"]
       });
       var user_data = {
