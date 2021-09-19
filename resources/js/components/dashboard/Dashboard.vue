@@ -5,7 +5,7 @@
       <dashboard-header></dashboard-header>
 
       <!-- Main Sidebar Container -->
-      <dashborad-sidebar></dashborad-sidebar>
+      <dashborad-sidebar :type="type"></dashborad-sidebar>
 
       <!-- Content Wrapper. Contains page content -->
       <div class="content-wrapper">

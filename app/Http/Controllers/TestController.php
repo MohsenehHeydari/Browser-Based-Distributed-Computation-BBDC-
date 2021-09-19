@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Job;
+use App\Traits\KafkaConnect;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use App\Models\OwnerJob;
 
 class TestController extends Controller
 {
-
+    use KafkaConnect;
     public function index($f = null)
     {
         if ($f == null) {
@@ -33,39 +35,46 @@ class TestController extends Controller
 
     public function reset()
     {
-        $waiting_group = 'waitingReduceData_2';
-        $this->redisDeleteAll($waiting_group);
-        $pending_group = 'pendingReduceData_2';
-        $this->redisDeleteAll($pending_group);
-        $pending_map_data = 'pendingMapData_2';
-        $this->redisDeleteAll($pending_map_data);
-        $pending_reduce_data = 'pendingReduceData_2';
-        $this->redisDeleteAll($pending_reduce_data);
-        $result_reduce = 'resultReduce_2';
-        $this->redisDeleteAll($result_reduce);
-        $sentTaskInfo = 'sentTaskInfo-2';
-        $this->redisDeleteAll($sentTaskInfo);
-        $recievedResultInfo = 'recievedResultInfo-2';
-        $this->redisDeleteAll($recievedResultInfo);
+        $jobs=Job::get();
+        foreach ($jobs as $job){
+            $waiting_group = 'waitingReduceData_'.$job->id;
+            $this->redisDeleteAll($waiting_group);
+            $pending_group = 'pendingReduceData_'.$job->id;
+            $this->redisDeleteAll($pending_group);
+            $pending_map_data = 'pendingMapData_'.$job->id;
+            $this->redisDeleteAll($pending_map_data);
+            $pending_reduce_data = 'pendingReduceData_'.$job->id;
+            $this->redisDeleteAll($pending_reduce_data);
+            $result_reduce = 'resultReduce_'.$job->id;
+            $this->redisDeleteAll($result_reduce);
+            $sentTaskInfo = 'sentTaskInfo-'.$job->id;
+            $this->redisDeleteAll($sentTaskInfo);
+            $receivedResultInfo = 'receivedResultInfo-'.$job->id;
+            $this->redisDeleteAll($receivedResultInfo);
 
-        $map_data_count = 'MapDataCount_2';
-        Cache::forget($map_data_count);
-        $currentConsumePartition = 'currentConsumePartition_2';
-        Cache::forget($currentConsumePartition);
+            $map_data_count = 'MapDataCount_'.$job->id;
+            Cache::forget($map_data_count);
+            $currentConsumePartition = 'currentConsumePartition_'.$job->id;
+            Cache::forget($currentConsumePartition);
 
-        $this->initConnector('consume', 'matrixMultiplication-reduce');
-        $this->cousumeAllMessage(0);
-        $this->cousumeAllMessage(1);
-        $this->cousumeAllMessage(2);
-        $this->cousumeAllMessage(3);
+            $this->initConnector('consume', $job->name.'-reduce');
+            $this->cousumeAllMessage(0);
+            $this->cousumeAllMessage(1);
+            $this->cousumeAllMessage(2);
+            $this->cousumeAllMessage(3);
 
-        $this->initConnector('consume', 'matrixMultiplication-map');
-        $this->cousumeAllMessage(0);
+            $this->initConnector('consume', $job->name.'-map');
+            $this->cousumeAllMessage(0);
+            $owner_job = OwnerJob::where('job_id',$job->id)->first();
+            if($owner_job){
+                $owner_job->status = 'init';
+                $owner_job->proccess_log = '';
+                $owner_job->save();
+            }
 
-        $owner_job = OwnerJob::find(1);
-        $owner_job->status = 'init';
-        $owner_job->proccess_log = '';
-        $owner_job->save();
+
+        }
+
 
         dd('reset');
     }

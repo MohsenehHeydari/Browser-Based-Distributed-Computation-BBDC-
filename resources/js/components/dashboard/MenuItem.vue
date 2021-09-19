@@ -3,7 +3,7 @@
     <li class="nav-item" :class="$route.meta.resource === route.meta.resource && isMainMenu ? 'menu-open':''">
     
         <!-- like <a> create a link to a address that vue-router makes -->
-        <router-link :to="{name: route.name}" class="nav-link" :exact-active-class="'active'"> <!-- -->
+        <router-link :to="isMainMenu?route.path:{name:route.name}" class="nav-link" :exact-active-class="'active'"> <!-- -->
         <i class="nav-icon" :class="route.meta.icon"></i>
         <p>{{route.meta.title}}</p>
         <!-- {{route.children}} -->
@@ -11,7 +11,7 @@
         </router-link>
                 
         <ul v-if="hasChildren" class="nav nav-treeview">
-            <sub-menu-item :isMainMenu="false" 
+            <sub-menu-item :isMainMenu="false"
             v-for="(child, index) in children" :key="parentIndex+'-'+index"
             :route="child"></sub-menu-item>
         </ul>

@@ -2468,6 +2468,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _helpers_GlobalMethods_vue__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../helpers/GlobalMethods.vue */ "./resources/js/helpers/GlobalMethods.vue");
 /* harmony import */ var _MenuItem_vue__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./MenuItem.vue */ "./resources/js/components/dashboard/MenuItem.vue");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! axios */ "./node_modules/axios/index.js");
+/* harmony import */ var axios__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(axios__WEBPACK_IMPORTED_MODULE_2__);
 //
 //
 //
@@ -2629,6 +2631,10 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -2643,6 +2649,20 @@ __webpack_require__.r(__webpack_exports__);
   computed: {
     routes: function routes() {
       return this.$router.options.routes;
+    },
+    baseUrl: function baseUrl() {
+      var getUrl = window.location;
+      return getUrl.protocol + "//" + getUrl.host;
+    }
+  },
+  methods: {
+    logout: function logout() {
+      var _this = this;
+
+      var logoutUrl = '/' + this.type + '/logout';
+      axios__WEBPACK_IMPORTED_MODULE_2___default().post(logoutUrl).then(function (respone) {
+        window.location = _this.baseUrl + '/' + _this.type + '/login';
+      });
     }
   }
 });
@@ -42572,7 +42592,7 @@ var render = function() {
         [
           _c("dashboard-header"),
           _vm._v(" "),
-          _c("dashborad-sidebar"),
+          _c("dashborad-sidebar", { attrs: { type: _vm.type } }),
           _vm._v(" "),
           _c(
             "div",
@@ -43157,14 +43177,7 @@ var render = function() {
           _c("nav", { staticClass: "mt-2" }, [
             _c(
               "ul",
-              {
-                staticClass: "nav nav-pills nav-sidebar flex-column",
-                attrs: {
-                  "data-widget": "treeview",
-                  role: "menu",
-                  "data-accordion": "false"
-                }
-              },
+              { staticClass: "nav nav-pills nav-sidebar flex-column" },
               [
                 _vm._l(_vm.routes, function(route, index) {
                   return [
@@ -43198,15 +43211,32 @@ var render = function() {
                   ]
                 }),
                 _vm._v(" "),
-                _vm._m(2),
-                _vm._v(" "),
-                _vm._m(3),
-                _vm._v(" "),
-                _c("li", { staticClass: "nav-header" }, [
-                  _vm._v("MISCELLANEOUS")
-                ]),
-                _vm._v(" "),
-                _vm._m(4)
+                _c("li", { staticClass: "nav-item" }, [
+                  _c(
+                    "a",
+                    {
+                      staticClass: "nav-link",
+                      attrs: { href: "pages/widgets.html" },
+                      on: {
+                        click: function($event) {
+                          $event.preventDefault()
+                          return _vm.logout($event)
+                        }
+                      }
+                    },
+                    [
+                      _c("i", {
+                        staticClass: "nav-icon fas fa-arrow-circle-down"
+                      }),
+                      _vm._v(" "),
+                      _c("p", [
+                        _vm._v(
+                          "\n                        Logout\n                    "
+                        )
+                      ])
+                    ]
+                  )
+                ])
               ],
               2
             )
@@ -43256,181 +43286,6 @@ var staticRenderFns = [
         ]
       )
     ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("li", { staticClass: "nav-item" }, [
-      _c(
-        "a",
-        { staticClass: "nav-link", attrs: { href: "pages/widgets.html" } },
-        [
-          _c("i", { staticClass: "nav-icon fas fa-th" }),
-          _vm._v(" "),
-          _c("p", [
-            _vm._v("\n              Widgets\n              "),
-            _c("span", { staticClass: "right badge badge-danger" }, [
-              _vm._v("New")
-            ])
-          ])
-        ]
-      )
-    ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("li", { staticClass: "nav-item" }, [
-      _c("a", { staticClass: "nav-link", attrs: { href: "#" } }, [
-        _c("i", { staticClass: "nav-icon fas fa-copy" }),
-        _vm._v(" "),
-        _c("p", [
-          _vm._v("\n              Layout Options\n              "),
-          _c("i", { staticClass: "fas fa-angle-left right" }),
-          _vm._v(" "),
-          _c("span", { staticClass: "badge badge-info right" }, [_vm._v("6")])
-        ])
-      ]),
-      _vm._v(" "),
-      _c("ul", { staticClass: "nav nav-treeview" }, [
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/top-nav.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [_vm._v("Top Navigation")])
-            ]
-          )
-        ]),
-        _vm._v(" "),
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/top-nav-sidebar.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [_vm._v("Top Navigation + Sidebar")])
-            ]
-          )
-        ]),
-        _vm._v(" "),
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/boxed.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [_vm._v("Boxed")])
-            ]
-          )
-        ]),
-        _vm._v(" "),
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/fixed-sidebar.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [_vm._v("Fixed Sidebar")])
-            ]
-          )
-        ]),
-        _vm._v(" "),
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/fixed-sidebar-custom.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [
-                _vm._v("Fixed Sidebar "),
-                _c("small", [_vm._v("+ Custom Area")])
-              ])
-            ]
-          )
-        ]),
-        _vm._v(" "),
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/fixed-topnav.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [_vm._v("Fixed Navbar")])
-            ]
-          )
-        ]),
-        _vm._v(" "),
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/fixed-footer.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [_vm._v("Fixed Footer")])
-            ]
-          )
-        ]),
-        _vm._v(" "),
-        _c("li", { staticClass: "nav-item" }, [
-          _c(
-            "a",
-            {
-              staticClass: "nav-link",
-              attrs: { href: "pages/layout/collapsed-sidebar.html" }
-            },
-            [
-              _c("i", { staticClass: "far fa-circle nav-icon" }),
-              _vm._v(" "),
-              _c("p", [_vm._v("Collapsed Sidebar")])
-            ]
-          )
-        ])
-      ])
-    ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("li", { staticClass: "nav-item" }, [
-      _c("a", { staticClass: "nav-link", attrs: { href: "iframe.html" } }, [
-        _c("i", { staticClass: "nav-icon fas fa-ellipsis-h" }),
-        _vm._v(" "),
-        _c("p", [_vm._v("Tabbed IFrame Plugin")])
-      ])
-    ])
   }
 ]
 render._withStripped = true
@@ -43470,7 +43325,7 @@ var render = function() {
         {
           staticClass: "nav-link",
           attrs: {
-            to: { name: _vm.route.name },
+            to: _vm.isMainMenu ? _vm.route.path : { name: _vm.route.name },
             "exact-active-class": "active"
           }
         },
