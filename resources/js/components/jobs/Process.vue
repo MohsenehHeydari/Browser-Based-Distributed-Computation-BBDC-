@@ -56,7 +56,7 @@ import axios from "axios";
                 this.workingStatus = false;
             },
             startSocketConnection() {
-                this.socket = io.connect("http://192.168.1.109:300", {
+                this.socket = io.connect("http://192.168.1.106:400", {
                     transports: ["websocket"],
                 });
                 let user_data = {
