@@ -7,15 +7,18 @@ let redisClient=redis.createClient({ detect_buffers: true });
 let http = require('http'); //this is in node.js by default
 let server = http.Server(app); // an instance of server 
 
-const port = 300;
+const port = 400;
 
 let users = {};
+app.get('/', (req, resp) => {
+    resp.send('hello word!')
+});
 
 // server.listen(port, () => {
 //     console.log('server is listening to port : ' + port);
 // });
-server.listen(port, '192.168.1.109');
-console.log('server is listening to 192.168.1.109: ' + port);
+server.listen(port, '192.168.1.106');
+console.log('server is listening to 192.168.1.106: ' + port);
 
 let io = socket(server); // a socket server is running
 
