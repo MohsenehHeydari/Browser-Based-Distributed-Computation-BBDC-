@@ -26,7 +26,6 @@
         
         function sendResult(Request $request){
             $this->validate($request,[
-                'result'=>'required',
                 'job_id'=>'required|exists:jobs,id',// job_id should be in 'job' table in a record named 'id'
                 'data'=>'required',
             ]);
@@ -45,18 +44,28 @@
         }
     
         public function receiveResult( $request)
-    {
-        $this->validate($request,[
-            'result' => 'required', //it should have 'result' key in request
-            'result.*' => 'required', // result should not be empty
+    {    $task = Task::with('job')->findOrFail($request->data['task_id']);
+
+        $rules = [
+            // 'result' => 'required', //it should have 'result' key in request
+            // 'result.*' => 'nullable', // result should not be empty
             'data' => 'required',
             'data.task_id' =>'required|exists:tasks,id',
             'data.owner_job_id' => 'required|exists:owner_jobs,id',
             'job_id' => 'required|exists:jobs,id',
-        ]);
+        ];
+        
+        if($task->type !== 'map'){
+           $rules['result.*']='required';
+           $rules['result']='required';
+            
+        }
+
+        $this->validate($request,$rules);
+
         // request = result+data+job_id
         //validate data
-        $task = Task::with('job')->findOrFail($request->data['task_id']);
+       
         
         if($task->type === 'map'){
             $this-> receiveMapResult($request,$task);
@@ -80,7 +89,7 @@
         $sentTaskInfo = 'sentTaskInfo-'.$owner_job_id;
         $taskCountValue = Redis::hGet($sentTaskInfo,$key);
         if($taskCountValue == null){
-            throw new \Exception('task count is not valid for current result!');
+            throw new \Exception('task count is not valid for current result! key : '.$key);
         }
         $taskCountValue = json_decode($taskCountValue,true);
         // time of proccessing time of client
@@ -132,9 +141,6 @@
                 
             }
 
-        }else{
-            // throw exception to client 
-            throw new \Exception('recieved result is empty');
         }
     }
 

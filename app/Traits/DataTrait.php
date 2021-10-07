@@ -313,8 +313,10 @@ trait DataTrait{
                 }else{
                     //save final result to file
                     $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
+
+                    $result_collection=collect($total_result)->sortKeys();
                     $string_result = '';
-                    foreach($total_result as $key=>$value){
+                    foreach($result_collection as $key=>$value){
                         $string_result .= $key. ' : ' .$value. "\n"; 
                     }
                     $final_result_path= 'results/'.$owner_job->job->name.'/'.$owner_job->name.'-'.$owner_job->id.'.txt'; //creating url 
@@ -376,7 +378,7 @@ trait DataTrait{
             $proccess_log = ProcessLog::where([
                 'worker_id' => $worker_id,
                 'device_id' => $device_id,
-                'owner_job_id' => $owner_job->id,])->first();
+                'owner_job_id' => $owner_job->id])->first();
 
 
             if($proccess_log == null){
@@ -396,17 +398,19 @@ trait DataTrait{
                     $resultCount = 0;
                 }
 
-                ProcessLog::create(
-                [
-                    'worker_id' =>$worker_id,
-                    'device_id' => $device_id,
-                    'owner_job_id' => $owner_job->id,
+                ProcessLog::updateOrCreate(
+                    [
+                        'worker_id' => $worker_id,
+                        'device_id' => $device_id,
+                        'owner_job_id' => $owner_job->id
+                    ],
+                    [
                     //check if client can not do any task (it might client has stopped in one task) 
                     'result_count' => $resultCount,
                     'task_count'=> $taskInfo['count'],
                     'success_percent' => $successPercent,
                     'avg_proccessing_duration' => $avgProccessingDurationTime,
-                ]);
+                    ]);
             }
         }    
     }

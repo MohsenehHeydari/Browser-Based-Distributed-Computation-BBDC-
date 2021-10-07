@@ -7,6 +7,7 @@ use App\Traits\KafkaConnect;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use App\Models\OwnerJob;
+use App\Models\ProcessLog;
 
 class TestController extends Controller
 {
@@ -24,11 +25,12 @@ class TestController extends Controller
     }
 
 
-
+    
     public function test(){
-
-        $redis_connection = Redis::connection();
-        $redis_connection->publish('a channel', 'hello message');
+        dd($proccess_log = ProcessLog::where([
+            'worker_id' => 2,
+            'device_id' => 2,
+            'owner_job_id' => 1,])->first());
     }
     
 
@@ -72,6 +74,8 @@ class TestController extends Controller
                 $owner_job->save();
             }
 
+            $logs=ProcessLog::get()->pluck('id')->toArray();
+            ProcessLog::destroy($logs);
 
         }
 

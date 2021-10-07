@@ -11,14 +11,15 @@ const port = 400;
 
 let users = {};
 app.get('/', (req, resp) => {
-    resp.send('hello word!')
+    resp.send('hello world without firewall!')
 });
 
 // server.listen(port, () => {
 //     console.log('server is listening to port : ' + port);
 // });
-server.listen(port, '192.168.1.106');
-console.log('server is listening to 192.168.1.106: ' + port);
+server.listen(port, '192.168.1.110');
+// server.listen(port, 'localhost');
+console.log('server is listening  ' + port);
 
 let io = socket(server); // a socket server is running
 

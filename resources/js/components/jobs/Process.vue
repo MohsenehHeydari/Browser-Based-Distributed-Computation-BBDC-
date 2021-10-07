@@ -25,6 +25,7 @@ import axios from "axios";
                 currentTaskFile: null,
                 tasks:[],
                 socket: null,
+                failedCount: 0,
 
             }
         },
@@ -56,7 +57,7 @@ import axios from "axios";
                 this.workingStatus = false;
             },
             startSocketConnection() {
-                this.socket = io.connect("http://192.168.1.106:400", {
+                this.socket = io.connect("http://192.168.1.110:400", {
                     transports: ["websocket"],
                 });
                 let user_data = {
@@ -82,12 +83,29 @@ import axios from "axios";
             stopSocketConnection() {
                 this.socket.disconnect();
             },
+
+            // request task and data information
+            async getProcessData(){
+                 try{
+                        let response = await axios.get("/worker/taskRequest/" + this.$route.params.id);
+                        return response.data.data;
+                    }catch(error){
+                        if(this.failedCount<=20){
+                            this.failedCount+=1;
+                            return await getProcessData();
+                        }else{
+                            throw new Error('failed count is more than 10!');
+                        }
+                    }
+            },
+
             async setTaskAndData(currentData) {
-                console.log("setTaskAndData method started");
+                // console.log("setTaskAndData method started");
                 
                 if (currentData === undefined) {
-                    let response = await axios.get("/worker/taskRequest/" + this.$route.params.id);
-                    currentData = response.data.data;
+
+                   currentData = await this.getProcessData();
+                    
                 }
                 if (![null, undefined, false, 0].includes(currentData)) {
                     this.currentData = currentData;
@@ -95,7 +113,7 @@ import axios from "axios";
 
                     this.currentDataFile = await this.getDataFile();
                     if(![null, undefined, false, 0].includes(this.currentDataFile)){
-                        console.log("data file has gotten, lets go to get task file");
+                        // console.log("data file has gotten, lets go to get task file");
                         this.currentTaskFile = await this.getTaskFile();
                     }
                    
@@ -109,7 +127,7 @@ import axios from "axios";
                     ![null, undefined, false, 0].includes(this.currentDataFile) &&
                     ![null, undefined, false, 0].includes(this.currentTaskFile)
                 ) {
-                    console.log("doTask");
+                    // console.log("doTask");
                     this.doTask();
                 } else {
                     console.log("can not do task!");
@@ -123,7 +141,7 @@ import axios from "axios";
                     
                     if(this.currentData.value == undefined || this.currentData.value == null || this.currentData.value == ''){
                          let response = await axios.get(this.currentData.url);
-                        console.log(response.data);
+                        // console.log(response.data);
                         return response.data;
                     }
 
@@ -137,15 +155,15 @@ import axios from "axios";
             },
             async getTaskFile() {
                 this.currentTaskFile = null;
-                console.log("getTaskFile");
+                // console.log("getTaskFile");
                 //check if task has downloaded before
                 if (this.tasks[this.taskId]) {
-                    console.log("task exist");
+                    // console.log("task exist");
                     return this.tasks[this.taskId];
                 } else {
                     console.log("task doesnt exsit");
                     let url = "/taskContents/" + this.taskId + ".txt";
-                    console.log("task url is created");
+                    // console.log("task url is created");
                     let response = await axios.get(url);
                     // this.tasks[this.currentData.task_id] = response.data;
                     // let tasks=JSON.parse(JSON.stringify(this.tasks));
@@ -176,7 +194,7 @@ import axios from "axios";
                     job_id: this.$route.params.id,
                     })
                     .then((response) => {
-                    console.log("hasNewtTask ", response.data.hasNewTask);
+                    // console.log("hasNewtTask ", response.data.hasNewTask);
                     if (response.data.hasNewTask === 1 && this.stopComputationStatus !== true) {
                         this.setTaskAndData(response.data.nextData);
                         // this.workingStatus = false;
@@ -184,7 +202,16 @@ import axios from "axios";
                         console.log("process is finished!", response.data);
                         this.workingStatus = false;
                     }
-                    });
+                    })
+                    .catch((error)=>{
+
+                        this.failedCount++;
+                        
+                        if(this.failedCount <= 20){
+                            this.setTaskAndData();
+                        }
+                    }
+                    );    
             },
         },
         mounted(){

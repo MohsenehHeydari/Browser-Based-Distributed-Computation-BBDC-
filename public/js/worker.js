@@ -2866,7 +2866,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       currentDataFile: null,
       currentTaskFile: null,
       tasks: [],
-      socket: null
+      socket: null,
+      failedCount: 0
     };
   },
   inject: ['user', 'getDeviceId'],
@@ -2903,7 +2904,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     startSocketConnection: function startSocketConnection() {
       var _this = this;
 
-      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("http://192.168.1.109:300", {
+      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("http://192.168.1.110:400", {
         transports: ["websocket"]
       });
       var user_data = {
@@ -2927,7 +2928,18 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     stopSocketConnection: function stopSocketConnection() {
       this.socket.disconnect();
     },
-    setTaskAndData: function setTaskAndData(currentData) {
+    // request task and data information
+    getProcessData: function (_getProcessData) {
+      function getProcessData() {
+        return _getProcessData.apply(this, arguments);
+      }
+
+      getProcessData.toString = function () {
+        return _getProcessData.toString();
+      };
+
+      return getProcessData;
+    }(function () {
       var _this2 = this;
 
       return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().mark(function _callee() {
@@ -2936,147 +2948,183 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                console.log("setTaskAndData method started");
-
-                if (!(currentData === undefined)) {
-                  _context.next = 6;
-                  break;
-                }
-
-                _context.next = 4;
+                _context.prev = 0;
+                _context.next = 3;
                 return axios__WEBPACK_IMPORTED_MODULE_2___default().get("/worker/taskRequest/" + _this2.$route.params.id);
 
-              case 4:
+              case 3:
                 response = _context.sent;
-                currentData = response.data.data;
+                return _context.abrupt("return", response.data.data);
 
-              case 6:
-                if ([null, undefined, false, 0].includes(currentData)) {
-                  _context.next = 19;
+              case 7:
+                _context.prev = 7;
+                _context.t0 = _context["catch"](0);
+
+                if (!(_this2.failedCount <= 20)) {
+                  _context.next = 16;
                   break;
                 }
 
-                _this2.currentData = currentData;
-                _this2.taskId = currentData.task_id;
-                _context.next = 11;
-                return _this2.getDataFile();
+                _this2.failedCount += 1;
+                _context.next = 13;
+                return getProcessData();
 
-              case 11:
-                _this2.currentDataFile = _context.sent;
-
-                if ([null, undefined, false, 0].includes(_this2.currentDataFile)) {
-                  _context.next = 17;
-                  break;
-                }
-
-                console.log("data file has gotten, lets go to get task file");
-                _context.next = 16;
-                return _this2.getTaskFile();
+              case 13:
+                return _context.abrupt("return", _context.sent);
 
               case 16:
-                _this2.currentTaskFile = _context.sent;
+                throw new Error('failed count is more than 10!');
 
               case 17:
-                _context.next = 22;
-                break;
-
-              case 19:
-                console.log("no data to process!!");
-                _this2.workingStatus = false;
-                return _context.abrupt("return");
-
-              case 22:
-                if (![null, undefined, false, 0].includes(_this2.currentDataFile) && ![null, undefined, false, 0].includes(_this2.currentTaskFile)) {
-                  console.log("doTask");
-
-                  _this2.doTask();
-                } else {
-                  console.log("can not do task!");
-                }
-
-              case 23:
               case "end":
                 return _context.stop();
             }
           }
-        }, _callee);
+        }, _callee, null, [[0, 7]]);
       }))();
-    },
-    getDataFile: function getDataFile() {
+    }),
+    setTaskAndData: function setTaskAndData(currentData) {
       var _this3 = this;
 
       return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().mark(function _callee2() {
-        var response;
         return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
-                _context2.prev = 0;
-                _this3.currentDataFile = null;
-
-                if (!(_this3.currentData.value == undefined || _this3.currentData.value == null || _this3.currentData.value == '')) {
-                  _context2.next = 8;
+                if (!(currentData === undefined)) {
+                  _context2.next = 4;
                   break;
                 }
 
-                _context2.next = 5;
-                return axios__WEBPACK_IMPORTED_MODULE_2___default().get(_this3.currentData.url);
+                _context2.next = 3;
+                return _this3.getProcessData();
 
-              case 5:
-                response = _context2.sent;
-                console.log(response.data);
-                return _context2.abrupt("return", response.data);
+              case 3:
+                currentData = _context2.sent;
 
-              case 8:
-                return _context2.abrupt("return", _this3.currentData);
+              case 4:
+                if ([null, undefined, false, 0].includes(currentData)) {
+                  _context2.next = 16;
+                  break;
+                }
 
-              case 11:
-                _context2.prev = 11;
-                _context2.t0 = _context2["catch"](0);
-                console.log('data file is not valid!');
-                return _context2.abrupt("return", null);
+                _this3.currentData = currentData;
+                _this3.taskId = currentData.task_id;
+                _context2.next = 9;
+                return _this3.getDataFile();
 
-              case 15:
+              case 9:
+                _this3.currentDataFile = _context2.sent;
+
+                if ([null, undefined, false, 0].includes(_this3.currentDataFile)) {
+                  _context2.next = 14;
+                  break;
+                }
+
+                _context2.next = 13;
+                return _this3.getTaskFile();
+
+              case 13:
+                _this3.currentTaskFile = _context2.sent;
+
+              case 14:
+                _context2.next = 19;
+                break;
+
+              case 16:
+                console.log("no data to process!!");
+                _this3.workingStatus = false;
+                return _context2.abrupt("return");
+
+              case 19:
+                if (![null, undefined, false, 0].includes(_this3.currentDataFile) && ![null, undefined, false, 0].includes(_this3.currentTaskFile)) {
+                  // console.log("doTask");
+                  _this3.doTask();
+                } else {
+                  console.log("can not do task!");
+                }
+
+              case 20:
               case "end":
                 return _context2.stop();
             }
           }
-        }, _callee2, null, [[0, 11]]);
+        }, _callee2);
       }))();
     },
-    getTaskFile: function getTaskFile() {
+    getDataFile: function getDataFile() {
       var _this4 = this;
 
       return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().mark(function _callee3() {
-        var url, response;
+        var response;
         return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
-                _this4.currentTaskFile = null;
-                console.log("getTaskFile"); //check if task has downloaded before
+                _context3.prev = 0;
+                _this4.currentDataFile = null;
 
-                if (!_this4.tasks[_this4.taskId]) {
+                if (!(_this4.currentData.value == undefined || _this4.currentData.value == null || _this4.currentData.value == '')) {
                   _context3.next = 7;
                   break;
                 }
 
-                console.log("task exist");
-                return _context3.abrupt("return", _this4.tasks[_this4.taskId]);
+                _context3.next = 5;
+                return axios__WEBPACK_IMPORTED_MODULE_2___default().get(_this4.currentData.url);
+
+              case 5:
+                response = _context3.sent;
+                return _context3.abrupt("return", response.data);
 
               case 7:
+                return _context3.abrupt("return", _this4.currentData);
+
+              case 10:
+                _context3.prev = 10;
+                _context3.t0 = _context3["catch"](0);
+                console.log('data file is not valid!');
+                return _context3.abrupt("return", null);
+
+              case 14:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, null, [[0, 10]]);
+      }))();
+    },
+    getTaskFile: function getTaskFile() {
+      var _this5 = this;
+
+      return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().mark(function _callee4() {
+        var url, response;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                _this5.currentTaskFile = null; // console.log("getTaskFile");
+                //check if task has downloaded before
+
+                if (!_this5.tasks[_this5.taskId]) {
+                  _context4.next = 5;
+                  break;
+                }
+
+                return _context4.abrupt("return", _this5.tasks[_this5.taskId]);
+
+              case 5:
                 console.log("task doesnt exsit");
-                url = "/taskContents/" + _this4.taskId + ".txt";
-                console.log("task url is created");
-                _context3.next = 12;
+                url = "/taskContents/" + _this5.taskId + ".txt"; // console.log("task url is created");
+
+                _context4.next = 9;
                 return axios__WEBPACK_IMPORTED_MODULE_2___default().get(url);
 
-              case 12:
-                response = _context3.sent;
+              case 9:
+                response = _context4.sent;
 
                 // this.tasks[this.currentData.task_id] = response.data;
                 // let tasks=JSON.parse(JSON.stringify(this.tasks));
-                _this4.$set(_this4.tasks, _this4.taskId, response.data); // Vue.set(object have changed, which key have changed, value of key)
+                _this5.$set(_this5.tasks, _this5.taskId, response.data); // Vue.set(object have changed, which key have changed, value of key)
                 // console.log(this.tasks,'tasks after changed')
                 // console.log(tasks,'clone tasks')
                 // this.tasks = tasks;
@@ -3085,18 +3133,18 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 // throw new Error("this.tasks");
 
 
-                return _context3.abrupt("return", response.data);
+                return _context4.abrupt("return", response.data);
 
-              case 15:
+              case 12:
               case "end":
-                return _context3.stop();
+                return _context4.stop();
             }
           }
-        }, _callee3);
+        }, _callee4);
       }))();
     },
     doTask: function doTask() {
-      var _this5 = this;
+      var _this6 = this;
 
       this.workingStatus = true; // create a function using 'data' as input name and currentTaskFile as funcion body
 
@@ -3108,14 +3156,19 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         data: this.currentData,
         job_id: this.$route.params.id
       }).then(function (response) {
-        console.log("hasNewtTask ", response.data.hasNewTask);
-
-        if (response.data.hasNewTask === 1 && _this5.stopComputationStatus !== true) {
-          _this5.setTaskAndData(response.data.nextData); // this.workingStatus = false;
+        // console.log("hasNewtTask ", response.data.hasNewTask);
+        if (response.data.hasNewTask === 1 && _this6.stopComputationStatus !== true) {
+          _this6.setTaskAndData(response.data.nextData); // this.workingStatus = false;
 
         } else {
           console.log("process is finished!", response.data);
-          _this5.workingStatus = false;
+          _this6.workingStatus = false;
+        }
+      })["catch"](function (error) {
+        _this6.failedCount++;
+
+        if (_this6.failedCount <= 20) {
+          _this6.setTaskAndData();
         }
       });
     }
