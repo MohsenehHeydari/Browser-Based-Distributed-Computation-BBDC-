@@ -10,24 +10,34 @@ class WordCountParsingPattern {
         // decomposition pattern for wordCount
         $contents = file_get_contents($request->file('data_file')->getRealPath());
         $lines = preg_split('/\n|\r\n?/', $contents);
-        $lines = array_filter($lines, function ($value) {
-            $value = preg_replace('/([~!@#$%^&*()_+=`{}\[\]\|\\\:;\'<>",.\/? -])+/i'," ",$value);
-            $value = trim($value);
-            return strlen($value) > 0;
-        });
+       
 
-        $index = 1;
-        foreach ($lines as $line) {
-            // $line=str_replace(['{','}',',',';','[',']','?',':','.','$','_','-','(',')','"',"'",'/'],' ',$line);
-            // $line = preg_replace('/([~!@#$%^&*()_+=`{}\[\]\|\\\:;\'<>",.\/? -])+/i'," ",$line);
-            // $line= trim($line);
-            //store lines to file
-            $url = 'data/' . $request->input('name') . $ownerJob->id . '/' . $index . '.txt';
-            Storage::disk('public')->put($url, $line);
+        if($request->data_type === 'file'){
+            $lines = array_filter($lines, function ($value) {
+                $value = preg_replace('/([~!@#$%^&*()_+=`{}\[\]\|\\\:;\'<>",.\/? -])+/i'," ",$value);
+                $value = trim($value);
+                return strlen($value) > 0;
+            });
+             $index = 1;
+            foreach ($lines as $line) {
+                // $line=str_replace(['{','}',',',';','[',']','?',':','.','$','_','-','(',')','"',"'",'/'],' ',$line);
+                // $line = preg_replace('/([~!@#$%^&*()_+=`{}\[\]\|\\\:;\'<>",.\/? -])+/i'," ",$line);
+                // $line= trim($line);
+                //store lines to file
+                $url = 'data/' . $request->input('name') . $ownerJob->id . '/' . $index . '.txt';
+                Storage::disk('public')->put($url, $line);
 
-            $index++;
+                $index++;
+            }
+            return $index;
         }
+        elseif($request->data_type === 'link_file'){
+            $lines = array_filter($lines, function ($value) {
+                $value = trim($value);
+                return strlen($value) > 0;
+            });
+            return count($lines);
 
-        return $lines;
+        }
     }
 }

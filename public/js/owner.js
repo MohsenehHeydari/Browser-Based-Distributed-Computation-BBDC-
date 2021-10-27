@@ -2907,6 +2907,9 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 //
 //
 //
+//
+//
+//
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -59049,13 +59052,17 @@ var render = function() {
                   _vm._v(" "),
                   _c("option", { attrs: { value: "link" } }, [
                     _vm._v("\n              Link\n            ")
+                  ]),
+                  _vm._v(" "),
+                  _c("option", { attrs: { value: "link_file" } }, [
+                    _vm._v("\n              File of links\n            ")
                   ])
                 ]
               )
             ])
           ]),
           _vm._v(" "),
-          _vm.data_type === "file"
+          _vm.data_type == "file" || _vm.data_type == "link_file"
             ? _c("div", { staticClass: "form-group row" }, [
                 _c("div", { staticClass: "col-sm-2" }),
                 _vm._v(" "),

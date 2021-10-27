@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use App\Models\OwnerJob;
 use App\Models\ProcessLog;
+use Carbon\Carbon;
 
 class TestController extends Controller
 {
@@ -27,10 +28,12 @@ class TestController extends Controller
 
     
     public function test(){
-        dd($proccess_log = ProcessLog::where([
-            'worker_id' => 2,
-            'device_id' => 2,
-            'owner_job_id' => 1,])->first());
+       
+        $bandwith = 'client_occupied_bandwith_size_1';
+        
+        $request_count = Cache::get('request_count_1');
+        $response_count = Cache::get('response_count_1');
+        dd(Cache::get($bandwith),$request_count, $response_count);
     }
     
 
@@ -58,6 +61,15 @@ class TestController extends Controller
             Cache::forget($map_data_count);
             $currentConsumePartition = 'currentConsumePartition_'.$job->id;
             Cache::forget($currentConsumePartition);
+            $start_ownerJob_date = 'start_ownerJob_date_'.$job->id;
+            Cache::forget($start_ownerJob_date);
+            $bandwith = 'client_occupied_bandwith_size_'.$job->id;
+            Cache::forget($bandwith);
+            $post_request_count = 'request_count_'.$job->id;
+            Cache::forget($post_request_count);
+            $response_data_count = 'response_count_'.$job->id;
+            Cache::forget($response_data_count);
+    
 
             $this->initConnector('consume', $job->name.'-reduce');
             $this->cousumeAllMessage(0);
@@ -70,7 +82,7 @@ class TestController extends Controller
             $owner_job = OwnerJob::where('job_id',$job->id)->first();
             if($owner_job){
                 $owner_job->status = 'init';
-                $owner_job->proccess_log = '';
+                $owner_job->process_log = '';
                 $owner_job->save();
             }
 

@@ -2904,7 +2904,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     startSocketConnection: function startSocketConnection() {
       var _this = this;
 
-      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("http://192.168.1.110:400", {
+      // this.socket = io.connect("http://192.168.1.110:400", {
+      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("localhost:400", {
         transports: ["websocket"]
       });
       var user_data = {

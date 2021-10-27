@@ -52,12 +52,15 @@
               <option value='link'>
                 Link
               </option>
+              <option value='link_file'>
+                File of links
+              </option>
             </select>
           </div>
         </div>
 
         <!-- if data type is a file upload a file -->
-        <div class="form-group row" v-if="data_type === 'file'">
+        <div class="form-group row" v-if="data_type == 'file' || data_type == 'link_file'">
           <div class="col-sm-2"></div>
           <label for="dataFile" class="col-sm-2 col-form-label">Data File</label>
           <div class="col-sm-5">

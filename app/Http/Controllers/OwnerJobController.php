@@ -17,10 +17,10 @@ class OwnerJobController extends Controller
             'name' => 'required|unique:owner_jobs,name', //unique at owner-jobs table in field name
             'expire_date' => 'required', // check format of date (year/month/date)
             'job_id' => 'required|exists:jobs,id',
-            'data_type'=>'required|in:file,link'
+            'data_type'=>'required|in:file,link,link_file'
         ];
 
-        if($request->data_type === 'file'){
+        if($request->data_type === 'file' || $request->data_type === 'link_file'){
             // $rules['data_file']="required_without:data_link|max:1000|mimes:txt, text"; // check mime type && size
 
             $rules['data_file']="required_without:data_link|max:1000"; // check mime type && size
@@ -31,7 +31,12 @@ class OwnerJobController extends Controller
 
         $this->validate($request, $rules);
 
-        $ownerJob=\DB::transaction(function()use($request){
+        $data_links = null;
+        if($request->data_type === 'link_file'){
+            $data_links = file_get_contents($request->file('data_file')->getRealPath());
+        }
+
+        $ownerJob=\DB::transaction(function()use($request,$data_links){
             $date = explode('/', $request->expire_date);
             $date = Carbon::create($date[0], $date[1], $date[2]);
             $ownerJob = OwnerJob::create([
@@ -40,17 +45,18 @@ class OwnerJobController extends Controller
                 'owner_id' => \Auth::user()->id,
                 'status' => 'init',
                 'job_id' => $request->job_id,
-                'data_count' => 0
+                'data_count' => 0,
+                'data_links' => $data_links
             ]);
             
             // choose a service dynamically
             $job = Job::find($request->job_id);
             $path = '\\App\\Services\\'.ucfirst($job->name).'ParsingPattern';
-            $files = app($path)->createFiles($request, $ownerJob); // app method create an instance of $path
+            $data_count = app($path)->createFiles($request, $ownerJob); // app method create an instance of $path
             // another way to use defined service:
                 // $service = new $path();
                 // $files = $service->createFiles($request, $ownerJob);
-            $ownerJob->data_count = count($files);
+            $ownerJob->data_count = $data_count;
             $ownerJob->save();
 
             return $ownerJob;

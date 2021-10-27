@@ -11,6 +11,7 @@ class OwnerJob extends Model
         'owner_id',
         'job_id',
         'data_url',
+        'data_links',
         'data_count',
         'expire_date',
         'reduced_count',
@@ -18,7 +19,7 @@ class OwnerJob extends Model
         'status',
         'final_result',
         'final_result_url',
-        'proccess_log,'
+        'process_log,'
 
     ];
 

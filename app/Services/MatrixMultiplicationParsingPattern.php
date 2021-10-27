@@ -146,6 +146,6 @@ class MatrixMultiplicationParsingPattern{
             }
         }
         // dd($urls);
-        return $urls;
+        return count($urls);
     }
 }

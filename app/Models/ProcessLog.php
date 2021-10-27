@@ -14,7 +14,7 @@ class ProcessLog extends Model
          'task_count',
          'result_count',
          'success_percent',
-         'avg_proccessing_duration',
+         'avg_processing_duration',
         ];
         // protected $hidden = [
         // 'created_at', 'updated_at','id'

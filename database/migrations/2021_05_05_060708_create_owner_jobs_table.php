@@ -19,6 +19,7 @@ class CreateOwnerJobsTable extends Migration
             $table->integer('job_id');
             $table->string('name');
             $table->string('data_url')->nullable();
+            $table->text('data_links')->nullable();
             $table->integer('data_count'); //count of decomposed data
             $table->timestamp('expire_date');
             $table->integer('reduced_count')->nullable(); // count of reduced task which is done
@@ -26,7 +27,7 @@ class CreateOwnerJobsTable extends Migration
             $table->enum('status',['init', 'pending', 'done', 'failed', 'waiting', 'mapping', 'reducing']);
             $table->string('final_result')->nullable();
             $table->string('final_result_url')->nullable();
-            $table->text('proccess_log')->nullable(); // log files and details of proccess like changing status
+            $table->text('process_log')->nullable(); // log files and details of proccess like changing status
             $table->timestamps();
         });
     }
