@@ -368,6 +368,11 @@ trait DataTrait{
                     $key=$keys[0];
                     return  json_decode(Redis::hGet($pending_group,$key),true);
                 }else{
+
+                    if($owner_job->status == 'done'){
+                        return $this->getData($owner_job->job_id);
+                    }
+
                     //save final result to file
                     $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
 
@@ -393,7 +398,13 @@ trait DataTrait{
                     $process_log_info['request_count'] = Cache::get($post_request_count);
                     $response_data_count = 'response_count_'.$owner_job->job_id;
                     $process_log_info['response_count'] = Cache::get($response_data_count);
-                    
+
+                    $server_process_duration_time = 'server_process_duration_time_'.$owner_job->job_id;
+                    $process_log_info['total_server_process']=Cache::get($server_process_duration_time);
+
+                    $server_process_duration_time_detail = Cache::get('server_process_duration_time_detail_'.$owner_job->job_id);
+                    $process_log_info['server_process_duration_time_detail']=$server_process_duration_time_detail;
+
                     $owner_job->process_log = json_encode($process_log_info); 
                     $owner_job->save();
                     Cache::put($currentConsumePartition,0);
@@ -441,6 +452,9 @@ trait DataTrait{
         Cache::forget($post_request_count);
         $response_data_count = 'response_count_'.$owner_job->job_id;
         Cache::forget($response_data_count);
+        $server_process_duration_time = 'server_process_duration_time_'.$owner_job->job_id;
+        Cache::forget($server_process_duration_time);
+        Cache::forget('server_process_duration_time_detail_'.$owner_job->job_id);
 
         // Storage::disk('public')->deleteDirectory('/data/'.$owner_job->name.$owner_job->id);
 

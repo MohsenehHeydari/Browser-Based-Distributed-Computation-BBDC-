@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
 
 class BandwidthAssessment
 {
@@ -34,6 +35,9 @@ class BandwidthAssessment
         
         $request_count = Cache::get('request_count_'.$job_id);
         $response_count = Cache::get('response_count_'.$job_id);
+
+        $server_process_duration_time = Cache::get('server_process_duration_time_'.$job_id);
+        $recieve_request_time = Carbon::now();
         
         // dd('routes', $request->route());
         $bandwith = 'client_occupied_bandwith_size_'.$job_id;
@@ -68,7 +72,13 @@ class BandwidthAssessment
         Cache::put($bandwith,$bandwidth_size,600);
         $response_count++;
         Cache::put('response_count_'.$job_id,$response_count,600);
+        $req_and_res_duration = $recieve_request_time->floatDiffInSeconds(Carbon::now()); // time between request from client till response from server per request
+        $server_process_duration_time+=$req_and_res_duration;
+        Cache::put('server_process_duration_time_'.$job_id,$server_process_duration_time,600); 
 
+        $server_process_duration_time_detail = Cache::get('server_process_duration_time_detail_'.$job_id)??'';//if it was null set '';
+        $server_process_duration_time_detail .= $req_and_res_duration.',';
+        Cache::put('server_process_duration_time_detail_'.$job_id,$server_process_duration_time_detail,600);
         // dd($size * 8,'bwa middleware',$response->getData()->data, $serialized_data);
         
 

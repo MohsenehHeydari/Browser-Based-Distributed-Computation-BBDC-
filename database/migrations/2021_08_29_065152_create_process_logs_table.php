@@ -21,7 +21,7 @@ class CreateProcessLogsTable extends Migration
             $table->integer('task_count');
             $table->integer('result_count');
             $table->integer('success_percent');
-            $table->integer('avg_processing_duration');
+            $table->float('avg_processing_duration');
             $table->timestamps();
 
         });

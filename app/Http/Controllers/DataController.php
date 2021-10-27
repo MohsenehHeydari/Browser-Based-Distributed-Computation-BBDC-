@@ -44,7 +44,11 @@
         }
     
         public function receiveResult( $request)
-    {    $task = Task::with('job')->findOrFail($request->data['task_id']);
+    {   $owner_job = OwnerJob::findOrFail($request->data['owner_job_id']);
+        if($owner_job->status == 'done'){
+            return ;
+        } 
+        $task = Task::with('job')->findOrFail($request->data['task_id']);
 
         $rules = [
             // 'result' => 'required', //it should have 'result' key in request

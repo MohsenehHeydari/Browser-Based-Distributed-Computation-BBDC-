@@ -69,6 +69,9 @@ class TestController extends Controller
             Cache::forget($post_request_count);
             $response_data_count = 'response_count_'.$job->id;
             Cache::forget($response_data_count);
+            $server_process_duration_time = 'server_process_duration_time_'.$job->id;
+            Cache::forget($server_process_duration_time);
+            Cache::forget('server_process_duration_time_detail_'.$job->id);
     
 
             $this->initConnector('consume', $job->name.'-reduce');
