@@ -29,11 +29,14 @@ class TestController extends Controller
     
     public function test(){
        
-        $bandwith = 'client_occupied_bandwith_size_1';
+        // $bandwith = 'client_occupied_bandwith_size_1';
         
-        $request_count = Cache::get('request_count_1');
-        $response_count = Cache::get('response_count_1');
-        dd(Cache::get($bandwith),$request_count, $response_count);
+        // $request_count = Cache::get('request_count_1');
+        // $response_count = Cache::get('response_count_1');
+        // dd(Cache::get($bandwith),$request_count, $response_count);
+
+        // Cache::forget('last_offset');
+        dd(Cache::get('last_partition'));
     }
     
 
@@ -72,7 +75,9 @@ class TestController extends Controller
             $server_process_duration_time = 'server_process_duration_time_'.$job->id;
             Cache::forget($server_process_duration_time);
             Cache::forget('server_process_duration_time_detail_'.$job->id);
-    
+            $topic=$job->name.'-map';
+            $key_cache = $topic.'-last_offset';
+            Cache::forget($key_cache);
 
             $this->initConnector('consume', $job->name.'-reduce');
             $this->cousumeAllMessage(0);

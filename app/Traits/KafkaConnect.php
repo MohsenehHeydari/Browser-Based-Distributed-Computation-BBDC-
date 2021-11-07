@@ -1,5 +1,6 @@
 <?php
 namespace App\Traits;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * 
@@ -23,7 +24,6 @@ trait KafkaConnect
             $this->topic = $this->producer->newTopic($topic);
         }else if($type === 'consume'){
 
-            $conf = new \RdKafka\Conf();
             $conf->set('group.id', 'myConsumerGroup');
 
             $this->consumer = new \RdKafka\Consumer($conf);
@@ -48,9 +48,17 @@ trait KafkaConnect
         
     }
 
-    public function consume($partition)
+    public function consume($partition,$key_cache = null)
     {
-        $this->topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
+        $last_offset = RD_KAFKA_OFFSET_STORED;
+        if($key_cache !== null){
+            $last_offset = Cache::get($key_cache);
+            if($last_offset == null){
+                $last_offset = RD_KAFKA_OFFSET_STORED;
+            }
+        }
+        $this->topic->consumeStart($partition,$last_offset);
+        
         $message = $this->topic->consume($partition,1500);
 
         if($message){
@@ -58,6 +66,9 @@ trait KafkaConnect
                 case RD_KAFKA_RESP_ERR_NO_ERROR:
                     // var_dump($message);
                     $result = json_decode($message->payload,true);
+                    if($key_cache !== null){
+                         Cache::put($key_cache,$message->offset+1,6000);
+                    }
                     return $result;
                     break;
                 case RD_KAFKA_RESP_ERR__PARTITION_EOF:

@@ -213,7 +213,8 @@ trait DataTrait{
             
             $topic=$owner_job->job->name.'-map';
             $this->initConnector('consume',$topic);
-            $data = $this->consume(0);
+            $key_cache = $topic.'-last_offset';
+            $data = $this->consume(0,$key_cache);
 
             if($data !== null){
                   // MapDataCount - 1
@@ -224,7 +225,7 @@ trait DataTrait{
             }
             else{
                 $count = Cache::put('MapDataCount_'.$owner_job->job_id,0,600);
-
+                Cache::forget($key_cache);
                 $allValues = Redis::hVals('pendingMapData_'.$owner_job->job_id);
                 if(count($allValues) > 0){
                     return json_decode($allValues[0],true); // transform to array

@@ -47,7 +47,7 @@ class MatrixMultiplicationParsingPattern{
 
             // $index++;
 
-            if(trim($line) == 'x'){// trim delete additional spaces
+            if(trim($line) == 'x'){// trim deletes additional spaces
                 $current_matrix = 'B';
                 continue;
             }
@@ -110,7 +110,7 @@ class MatrixMultiplicationParsingPattern{
             // ]);
         }
         // dd($first_matrix_data, $first_matrix_row_count,$first_matrix_column_count,$second_matrix_data, $second_matrix_row_count, $second_matrix_column_count);
-        // table_name, row_number, total_row_count : cell[1],cell[2],cell[3]
+        // table_name, row_number,column_number, total_row_count : cell[1],cell[2],cell[3]
         // A,1,1,4:1,2,3
 
         foreach($first_matrix_data as $row_index=>$row){

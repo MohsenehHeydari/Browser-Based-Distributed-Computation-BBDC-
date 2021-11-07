@@ -53,21 +53,21 @@ Artisan::command('testConsumer', function () {
     $topic = $rk->newTopic("test", $topicConf);
     $job_id=1;
     
-    for($i=0; $i<3; $i++){
+    for($i=0; $i<4; $i++){
         $result = [];
-        $first_of_partition = Carbon::now();
+        $first_of_consume = Carbon::now();
         // Start consuming partition 0
         $topic->consumeStart($i, RD_KAFKA_OFFSET_STORED);
         
         $this->comment('partition:'.$i);
-        $j=0;
+        // $j=0;
         $partition_end_status=false;
         
         //if there is no message to consume in partition 0, consume next partition
         while (!$partition_end_status) {
             $before_consume = Carbon::now();
             // $this->comment('counter:'.$j++);
-            $message = $topic->consume($i,1090);//consume(patition,timeout: maximum time to wait for message)
+            $message = $topic->consume($i,1100);//consume(patition,timeout: maximum time to wait for message)
 
             // $callbalck($message);
 
@@ -114,7 +114,7 @@ Artisan::command('testConsumer', function () {
             }
             
         }
-        $this->comment('partition consume duration:'.$first_of_partition->floatDiffInSeconds(Carbon::now()));
+        $this->comment('partition consume duration:'.$first_of_consume->floatDiffInSeconds(Carbon::now()));
         // $this->comment(json_encode($result));
     }
 
@@ -165,12 +165,12 @@ Artisan::command('testSingleConsumer', function () {
     
     $job_id=1;
 
-    $last_partition=Cache::get('last_partition')??0;
-    
+    $last_partition=Cache::get('last_partition')===null?0:Cache::get('last_partition');
+    $last_offset=Cache::get('last_offset')===null?RD_KAFKA_OFFSET_STORED:Cache::get('last_offset');
     $result = [];
        
         // Start consuming partition 0
-        $topic->consumeStart($last_partition, RD_KAFKA_OFFSET_STORED);
+        $topic->consumeStart($last_partition, $last_offset);
         
         $this->comment('partition:'.$last_partition);
         $j=0;
@@ -179,8 +179,9 @@ Artisan::command('testSingleConsumer', function () {
         //if there is no message to consume in partition 0, consume next partition
         while (!$partition_end_status) {
             // $this->comment('counter:'.$j++);
-            $message = $topic->consume($partition_end_status,1090);//consume(patition,timeout: maximum time to wait for message)
-            $first_of_partition = Carbon::now();
+            $first_of_consume = Carbon::now();
+            $message = $topic->consume($last_partition,1100);//consume(patition,timeout: maximum time to wait for message per partition)
+           
             // $callbalck($message);
 
             if($message){
@@ -188,31 +189,14 @@ Artisan::command('testSingleConsumer', function () {
                     case RD_KAFKA_RESP_ERR_NO_ERROR:
                         // var_dump($message);
                         $objectMessage = json_decode($message->payload);
-                        $this->comment('message is:'.$message->payload.'-time is:'.$first_of_partition->floatDiffInSeconds(Carbon::now()));
+                        $this->comment('message is:'.$message->payload.'-time is:'.$first_of_consume->floatDiffInSeconds(Carbon::now()));
+                        $this->comment('offset is:'.$message->offset);
+                        Cache::put('last_offset',$message->offset+1,6000);
                         return;
-                        //check if the partition is empty and this message is first one
-                        if(count($result) == 0){
-                            $result[$objectMessage->key]['value'] = [$objectMessage->value];
-                            $result[$objectMessage->key]['status'] = 'pending';
-                        }else {
-                            if(isset($result[$objectMessage->key])){
-                                $result[$objectMessage->key]['value'][] = $objectMessage->value; 
-                            }
-                            else{
-                                $result[$objectMessage->key]['value'] = [$objectMessage->value];
-                                $result[$objectMessage->key]['status'] = 'init';
-                            }
-                        }
-                        // Cache::tags('reduceData')->put($objectMessage->key, $result[$objectMessage->key]['value'], 120);
-                        if($result[$objectMessage->key]['status'] == 'pending'){
-                            Redis::hSet('pendingReduceData_'.$job_id, $objectMessage->key, json_encode($result[$objectMessage->key]['value']) );
-                        }
-                        else{
-                            Redis::hSet('initReduceData_'.$job_id, $objectMessage->key, json_encode($result[$objectMessage->key]['value']) );
-                        }
                         break;
                     case RD_KAFKA_RESP_ERR__PARTITION_EOF:
                         $this->comment("No more messages; will wait for more");
+                        $this->comment('message waiting-time is: '.$first_of_consume->floatDiffInSeconds(Carbon::now()));
                         break;
                     case RD_KAFKA_RESP_ERR__TIMED_OUT:
                         $this->comment("Timed out");
@@ -222,13 +206,17 @@ Artisan::command('testSingleConsumer', function () {
                         break;
                 }
             }else{
-                $this->comment('message waiting-time is: '.$first_of_partition->floatDiffInSeconds(Carbon::now()));
-                Cache::put('last_partition',$last_partition++,600);
+                $this->comment('message waiting-time is: '.$first_of_consume->floatDiffInSeconds(Carbon::now()));
+                if($last_partition >= 3){
+                    $last_partition = -1;
+                }
+                Cache::put('last_partition',++$last_partition,600);
+                Cache::put('last_offset',RD_KAFKA_OFFSET_STORED,6000);
                 $partition_end_status=true;
             }
             
         }
-        $this->comment('partition consume duration:'.$first_of_partition->floatDiffInSeconds(Carbon::now()));
+        $this->comment('partition consume duration:'.$first_of_consume->floatDiffInSeconds(Carbon::now()));
         // $this->comment(json_encode($result));
 
     // $this->comment('-----------------------');
@@ -261,10 +249,10 @@ Artisan::command('testProducer', function () {
         // produce 10 messages
         for ($i = 0; $i < 10; $i++) {
 
-            $key='text-'.random_int(1,5);
-            $value=random_int(1,2);
+            $key='text-'.$i;
+            $value=random_int(1,10);
             // partitioning: by using getHash function messages with same key will go to one partiotion
-            $partition=getHash($key,3);
+            $partition=getHash($key,4);
             $message =  json_encode(['key'=>$key,'value'=>$value]);
             // produce(partiotion,0/RD_KAFKA_MSG_F_BLOCK,message payload)
             //RD_KAFKA_PARTITION_UA = unassigned partition
