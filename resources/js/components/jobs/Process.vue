@@ -3,8 +3,8 @@
         <div>
             <button class="btn btn-success" @click.prevent="startComputation"> start </button>
             <button class="btn btn-danger" v-if = "!stopComputationStatus" @click.prevent="stopComputation"> stop </button>
-             <!-- <button class = "btn btn-danger" @click = "testReduceTask">test reduce task</button>  -->
-             <!-- <button class = "btn btn-info" @click="testMapTask">test map task</button> -->
+             <!-- <button class = "btn btn-danger" @click = "testGetSize">test get size</button>  -->
+             <!-- <button class = "btn btn-info" @click="testPostSize">test post size</button> -->
         </div>
         <br>
     </div>
@@ -43,6 +43,20 @@ import axios from "axios";
             }
         },
         methods:{
+            // testGetSize(){
+            //     axios.get('/test')
+            //     .then((response)=>{
+            //         console.log(response);
+            //     });
+            //     console.log('test get  request');
+            // },
+            // testPostSize(){
+            //     axios.post('/test')
+            //     .then((response)=>{
+            //         console.log(response);
+            //     });
+            //     console.log('test get  request');
+            // },
             startComputation() {
                 this.stopComputationStatus = false;
                 this.setTaskAndData();

@@ -127,7 +127,18 @@
                 
                 $this->initConnector('produce',$topic);
                 
+                $service_path = '\\App\\Services\\'.ucfirst($task->job->name).'ParsingPattern';
+                // check if recieved result is not proper (key,value) => we should generate a proper result
+                // in finding primes we recieved an array of arrays as a result ([[2,1],[3,1],[5,1]]) 
+                $method_exists=method_exists($service_path,'generateProperMapResult');
                 foreach($results as $key=>$value){
+
+                    if($method_exists){
+                        $temp_result=app($service_path)->generateProperMapResult($key,$value);
+                        $key=$temp_result['key'];
+                        $value=$temp_result['value'];
+                    }
+
                     $partition=$this->getHash($key,4);
                     $data=json_encode(['key'=>$key,'value'=>$value]);
                     $this->produce($data,$partition);

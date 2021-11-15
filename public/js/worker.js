@@ -2888,6 +2888,20 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }
   },
   methods: {
+    // testGetSize(){
+    //     axios.get('/test')
+    //     .then((response)=>{
+    //         console.log(response);
+    //     });
+    //     console.log('test get  request');
+    // },
+    // testPostSize(){
+    //     axios.post('/test')
+    //     .then((response)=>{
+    //         console.log(response);
+    //     });
+    //     console.log('test get  request');
+    // },
     startComputation: function startComputation() {
       this.stopComputationStatus = false;
       this.setTaskAndData(); //start socket connection
@@ -2904,8 +2918,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     startSocketConnection: function startSocketConnection() {
       var _this = this;
 
-      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("http://192.168.1.105:400", {
-        // this.socket = io.connect("localhost:400", {
+      // this.socket = io.connect("http://192.168.1.105:400", {
+      this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__["default"].connect("localhost:400", {
         transports: ["websocket"]
       });
       var user_data = {

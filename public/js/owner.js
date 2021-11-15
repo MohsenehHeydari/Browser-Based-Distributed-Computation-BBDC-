@@ -2910,6 +2910,21 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -59056,6 +59071,10 @@ var render = function() {
                   _vm._v(" "),
                   _c("option", { attrs: { value: "link_file" } }, [
                     _vm._v("\n              File of links\n            ")
+                  ]),
+                  _vm._v(" "),
+                  _c("option", { attrs: { value: "data_value" } }, [
+                    _vm._v("\n              Value\n            ")
                   ])
                 ]
               )
@@ -59129,7 +59148,8 @@ var render = function() {
                   )
                 ])
               ])
-            : _c("div", { staticClass: "form-group row" }, [
+            : _vm.data_type == "link"
+            ? _c("div", { staticClass: "form-group row" }, [
                 _c("div", { staticClass: "col-sm-2" }),
                 _vm._v(" "),
                 _c(
@@ -59187,6 +59207,74 @@ var render = function() {
                             "span",
                             {
                               key: "data_link" + index,
+                              staticClass: "error invalid-feedback"
+                            },
+                            [_vm._v(_vm._s(error_message))]
+                          )
+                        })
+                      : _vm._e()
+                  ],
+                  2
+                )
+              ])
+            : _c("div", { staticClass: "form-group row" }, [
+                _c("div", { staticClass: "col-sm-2" }),
+                _vm._v(" "),
+                _c(
+                  "label",
+                  {
+                    staticClass: "col-sm-2 col-form-label",
+                    attrs: { for: "data_value" }
+                  },
+                  [_vm._v("Value")]
+                ),
+                _vm._v(" "),
+                _c(
+                  "div",
+                  { staticClass: "col-sm-5" },
+                  [
+                    _c("input", {
+                      directives: [
+                        {
+                          name: "model",
+                          rawName: "v-model",
+                          value: _vm.model.data_value,
+                          expression: "model.data_value"
+                        }
+                      ],
+                      staticClass: "form-control",
+                      class: [
+                        _vm.errors["data_value"] !== undefined &&
+                        _vm.validName === false
+                          ? "is-invalid"
+                          : ""
+                      ],
+                      attrs: {
+                        type: "text",
+                        id: "data_value",
+                        name: "data_value",
+                        placeholder: "Enter your job input data value"
+                      },
+                      domProps: { value: _vm.model.data_value },
+                      on: {
+                        input: function($event) {
+                          if ($event.target.composing) {
+                            return
+                          }
+                          _vm.$set(_vm.model, "data_value", $event.target.value)
+                        }
+                      }
+                    }),
+                    _vm._v(" "),
+                    _vm.errors["data_value"] !== undefined
+                      ? _vm._l(_vm.errors["data_value"], function(
+                          error_message,
+                          index
+                        ) {
+                          return _c(
+                            "span",
+                            {
+                              key: "data_value" + index,
                               staticClass: "error invalid-feedback"
                             },
                             [_vm._v(_vm._s(error_message))]

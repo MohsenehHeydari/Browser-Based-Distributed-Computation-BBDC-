@@ -34,8 +34,7 @@ class BandwidthAssessment
         }
         
         $request_count = Cache::get('request_count_'.$job_id);
-        $response_count = Cache::get('response_count_'.$job_id);
-
+        
         $server_process_duration_time = Cache::get('server_process_duration_time_'.$job_id);
         $recieve_request_time = Carbon::now();
         
@@ -64,6 +63,8 @@ class BandwidthAssessment
 
         //assess bandwith when return data to worker(maybe a task info)
         $response = $next($request);
+        $response_count = Cache::get('response_count_'.$job_id);
+
         //response data is the input data need to process has been sent from server to worker 
         $response_data=$response->getData();
         $serialized_data = json_encode($response_data);

@@ -25,6 +25,12 @@ class JobsTableSeeder extends Seeder
             'map_count'=>'1',
             'reduce_count'=>'1',
         ],
+        [
+            'name'=>'findingPrimes',
+            'description'=>'this is an example of finding prime numbers lower than input data value.',
+            'map_count'=>'1',
+            'reduce_count'=>'1',
+        ],
     ];
     public function run()
     {

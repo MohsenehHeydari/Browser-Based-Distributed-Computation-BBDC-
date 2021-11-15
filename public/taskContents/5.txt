@@ -1,11 +1,34 @@
-let result={}
+data=data.split('-');
+    let min=+data[0];
+    let max=+data[1];
+    let N=+data[2];
+   
+    let KnownPrimes = [2,3,5,7];
+    let result =[];
+    for(min; min<=max; min++){
+        result.push([min,1]);
+        if(KnownPrimes.includes(min) || isNotDividable(min,KnownPrimes)){
+            
+            for(let i=2; i<=N; i++){
+                let f=i/min;
+                if(Number.isInteger(f)){
+                    let k = min*f;
+                    if(k <= N && k!= min){
+                        result.push([k,1]);
+                    }
+                }                
+                
+            }
+            
+        }
+    }
     
-    data.replace(/[^\w\s]/g, "").split(/\s+/).forEach( word => {
-        if(result[word]){
-            result[word]=result[word]+1
+    function isNotDividable(n,KP){ // check if n is divisable to any member of KnownPrims
+        for(let i=0; i<KP.length; i++){
+            if(n % KP[i] !== 0){
+                return true;
+            }
+            return false;
         }
-        else{
-            result[word]=1;
-        }
-    });
+    }
     return result;

@@ -55,6 +55,9 @@ trait DataTrait{
         $data = null;
         // dd($owner_job);
         if($owner_job){
+            $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
+            $reduce_method_exists=method_exists($service_path,'getReducingData');
+
             switch ($owner_job->status){
                 case 'init': 
                     $data =  $this->getInitData($owner_job);
@@ -63,10 +66,19 @@ trait DataTrait{
                     $data = $this->getMappingData($owner_job);
                     break;
                 case 'reducing':
-                    $data = $this->getReducingData($owner_job);
+                    if($reduce_method_exists){
+                        $data = app($service_path)->getReducingData($owner_job);
+                    }
+                    else{
+                        $data = $this->getReducingData($owner_job);
+                    }
                     break;
+                // case 'pending': 
+                //     $data =  $this->getInitData($owner_job);
+                //     break;
                 default:
                     break;
+
             }
             
             // save sent task count and time (base on second) base of worker id in redis 
@@ -209,6 +221,10 @@ trait DataTrait{
         }
 
         $count = Cache::get('MapDataCount_'.$owner_job->job_id);
+
+        $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
+        $reduce_method_exists=method_exists($service_path,'getReducingData');
+
         if($count > 0){
             
             $topic=$owner_job->job->name.'-map';
@@ -234,6 +250,9 @@ trait DataTrait{
                     $owner_job->status = 'reducing';
                     $owner_job->process_log = json_encode($process_log_info);
                     $owner_job->save();
+                    if($reduce_method_exists){
+                        return app($service_path)->getReducingData($owner_job);
+                    }
                     return $this->getReducingData($owner_job);
                 }
             }
@@ -249,6 +268,9 @@ trait DataTrait{
                 $owner_job->status = 'reducing';
                 $owner_job->process_log = json_encode($process_log_info); 
                 $owner_job->save();
+                if($reduce_method_exists){
+                    return app($service_path)->getReducingData($owner_job);
+                }
                 return $this->getReducingData($owner_job);
             }
             
@@ -281,8 +303,13 @@ trait DataTrait{
             return json_decode($data,true);
         }else{
 
-            $topic=$owner_job->job->name.'-reduce';
 
+            $topic=$owner_job->job->name.'-reduce';
+            // $consume_count_key =  $topic.'-consume-count';
+            // $consume_count = Cache::get($consume_count_key);
+            // if($consume_count === null){
+            //     $consume_count = 0;
+            // }
             $task=Task::where('type','reduce')->where('job_id',$owner_job->job_id)->first();
 
            
@@ -299,6 +326,8 @@ trait DataTrait{
                 $all_result = [];
                 while(count($all_result) == 0 && $partition < $this->reduce_partition_count){
                     $all_result=$this->cousumeAllMessage($partition);
+                    // $consume_count+=1;
+                    // Cache::put($consume_count_key,$consume_count,600);
                     $partition++;
                 }
                 // if($partition >= $this->reduce_partition_count){
@@ -319,9 +348,9 @@ trait DataTrait{
                         $pending_result['task_id']=$task->id;
                         $pending_result['owner_job_id']=$owner_job->id;
                     }else{
-                         if($pending_result['key'] === $key){
+                        if($pending_result['key'] === $key){
                             $pending_result['value'].=','.$value;
-                         }else{
+                        }else{
                              if(!isset($waiting_result[$key])){
                                 $waiting_result[$key]=[
                                     'key'=>$key,
@@ -353,7 +382,7 @@ trait DataTrait{
     }
     
     //last step check pending data
-    public function getPendingData($owner_job,$pending_group,$currentConsumePartition){
+    public function getPendingData($owner_job,$pending_group=null,$currentConsumePartition=null){
         $process_log_info=$owner_job->process_log;
         if($process_log_info === null){
             $process_log_info=[];
@@ -364,7 +393,11 @@ trait DataTrait{
             $process_log_info['description']= ''; 
         }
 
-        $keys=Redis::hKeys($pending_group);
+        $keys=[];
+        if($pending_group !== null){
+             $keys=Redis::hKeys($pending_group);
+        }
+       
                 if(count($keys)>0){
                     $key=$keys[0];
                     return  json_decode(Redis::hGet($pending_group,$key),true);
@@ -374,47 +407,79 @@ trait DataTrait{
                         return $this->getData($owner_job->job_id);
                     }
 
-                    //save final result to file
-                    $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
+                    try{
+                        // $owner_job->status='pending';
+                        // $owner_job->save();
 
-                    $result_collection=collect($total_result)->sortKeys();
-                    $string_result = '';
-                    foreach($result_collection as $key=>$value){
-                        $string_result .= $key. ' : ' .$value. "\n"; 
+                        //save final result to file
+                        $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
+                        if($total_result === null){
+                            
+                            $owner_job->status='done';
+                            $owner_job->save();
+                            return $this->getData($owner_job->job_id);
+                        }
+
+                        $result_collection=collect($total_result)->sortKeys();
+                        $string_result = '';
+                        foreach($result_collection as $key=>$value){
+                            $string_result .= $key. ' : ' .$value. "\n"; 
+                        }
+                        $final_result_path= 'results/'.$owner_job->job->name.'/'.$owner_job->name.'-'.$owner_job->id.'.txt'; //creating url 
+                        Storage::disk('public')->put($final_result_path, $string_result);//store data in file
+                        $owner_job->status='done';
+                        $owner_job->final_result_url = '/'.$final_result_path;
+
+                        $process_log_info['description'].= ' - owner job process has completed at: '. Carbon::now();
+                        
+                        $start_ownerJob_date=Cache::get('start_ownerJob_date_'.$owner_job->job_id);
+                        
+                        $process_log_info['total_ownerJob_duration'] = $start_ownerJob_date->floatDiffInSeconds(Carbon::now()); 
+                        
+                        $bandwith = 'client_occupied_bandwith_size_'.$owner_job->job_id;
+                        $process_log_info['client_occupied_bandwidth'] = Cache::get($bandwith);
+                        // $process_log_info['client_occupied_bandwidth'] .= ' bytes';
+
+                        $post_request_count = 'request_count_'.$owner_job->job_id;
+                        $process_log_info['request_count'] = Cache::get($post_request_count);
+
+                        $response_data_count = 'response_count_'.$owner_job->job_id;
+                        $process_log_info['response_count'] = Cache::get($response_data_count);
+
+                        $server_process_duration_time = 'server_process_duration_time_'.$owner_job->job_id;
+                        $process_log_info['total_server_process']=Cache::get($server_process_duration_time);
+
+                        $server_process_duration_time_detail = Cache::get('server_process_duration_time_detail_'.$owner_job->job_id);
+                        $process_log_info['server_process_duration_time_detail']=$server_process_duration_time_detail;
+
+                        $process_log_info['total_request_size'] = $process_log_info['request_count']*1348;
+                        $process_log_info['total_response_size'] = $process_log_info['response_count']*1200;
+                        $process_log_info['total_size'] = $process_log_info['total_request_size']+$process_log_info['total_response_size']+$process_log_info['client_occupied_bandwidth'];
+
+                        // $topic=$owner_job->job->name.'-reduce';
+                        // $consume_count_key =  $topic.'-consume-count';
+                        // $consume_count = Cache::get($consume_count_key);
+                        // $process_log_info['consume_count_reduce'] = $consume_count;
+
+                        $owner_job->process_log = json_encode($process_log_info); 
+                        $owner_job->save();
+                        if($currentConsumePartition !== null){
+                             Cache::put($currentConsumePartition,0);
+                        }
+                       
+
+                        $this->logProcess($owner_job);
+
+                        $this->reset($owner_job);
+
+                        return $this->getData($owner_job->job_id);
                     }
-                    $final_result_path= 'results/'.$owner_job->job->name.'/'.$owner_job->name.'-'.$owner_job->id.'.txt'; //creating url 
-                    Storage::disk('public')->put($final_result_path, $string_result);//store data in file
-                    $owner_job->status='done';
-                    $owner_job->final_result_url = '/'.$final_result_path;
-
-                    $process_log_info['description'].= ' - owner job process has completed at: '. Carbon::now();
-                    $start_ownerJob_date=Cache::get('start_ownerJob_date_'.$owner_job->job_id);
-                    $process_log_info['total_ownerJob_duration'] = $start_ownerJob_date->floatDiffInSeconds(Carbon::now()); 
+                    catch(\Exception $exp){
+                        $owner_job->status='failed';
+                        $owner_job->save();
+                        return $this->getData($owner_job->job_id);
+                    }
                     
-                    $bandwith = 'client_occupied_bandwith_size_'.$owner_job->job_id;
-                    $process_log_info['client_occupied_bandwidth'] = Cache::get($bandwith);
-                    $process_log_info['client_occupied_bandwidth'] .= ' bytes';
-
-                    $post_request_count = 'request_count_'.$owner_job->job_id;
-                    $process_log_info['request_count'] = Cache::get($post_request_count);
-                    $response_data_count = 'response_count_'.$owner_job->job_id;
-                    $process_log_info['response_count'] = Cache::get($response_data_count);
-
-                    $server_process_duration_time = 'server_process_duration_time_'.$owner_job->job_id;
-                    $process_log_info['total_server_process']=Cache::get($server_process_duration_time);
-
-                    $server_process_duration_time_detail = Cache::get('server_process_duration_time_detail_'.$owner_job->job_id);
-                    $process_log_info['server_process_duration_time_detail']=$server_process_duration_time_detail;
-
-                    $owner_job->process_log = json_encode($process_log_info); 
-                    $owner_job->save();
-                    Cache::put($currentConsumePartition,0);
-
-                    $this->logProcess($owner_job);
-
-                    $this->reset($owner_job);
-
-                    return $this->getData($owner_job->job_id);
                 }
     }
 
@@ -456,6 +521,11 @@ trait DataTrait{
         $server_process_duration_time = 'server_process_duration_time_'.$owner_job->job_id;
         Cache::forget($server_process_duration_time);
         Cache::forget('server_process_duration_time_detail_'.$owner_job->job_id);
+        $topic=$owner_job->job->name.'-map';
+        Cache::forget($topic.'-last_offset');
+        // $topic=$owner_job->job->name.'-reduce';
+        // $consume_count_key =  $topic.'-consume-count';
+        // Cache::forget($consume_count_key);
 
         // Storage::disk('public')->deleteDirectory('/data/'.$owner_job->name.$owner_job->id);
 

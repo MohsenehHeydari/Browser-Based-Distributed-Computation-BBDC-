@@ -80,6 +80,10 @@ Route::group(['prefix' => 'owner', 'middleware' => 'auth'], function () {
 Route::post('/set-cookie', 'AppController@setCookie')->name('set-cookie');
 Route::get('/get-cookie/{name}', 'AppController@getCookie')->name('get-cookie');
 
+Route::post('/test', function (Request $request) {
+    // sleep(10);
+    return '';
+});
 
 
 

@@ -17,7 +17,7 @@ class OwnerJobController extends Controller
             'name' => 'required|unique:owner_jobs,name', //unique at owner-jobs table in field name
             'expire_date' => 'required', // check format of date (year/month/date)
             'job_id' => 'required|exists:jobs,id',
-            'data_type'=>'required|in:file,link,link_file'
+            'data_type'=>'required|in:file,link,link_file,data_value'
         ];
 
         if($request->data_type === 'file' || $request->data_type === 'link_file'){
@@ -27,6 +27,9 @@ class OwnerJobController extends Controller
         }
         if($request->data_type === 'link'){
             $rules['data_link']='required';
+        }
+        if($request->data_type === 'data_value'){
+            $rules['data_value']='required';
         }
 
         $this->validate($request, $rules);
@@ -98,7 +101,7 @@ class OwnerJobController extends Controller
                     $available_devices[] = $online_user['device_id'];
                 }
             }
-            if (count($available_devices) > 0) {
+            if(count($available_devices) > 0) {
                 $data = \DB::table('process_logs')
                     ->join('devices', 'devices.id', '=', 'process_logs.device_id')
                     ->whereIn('process_logs.device_id', $available_devices)

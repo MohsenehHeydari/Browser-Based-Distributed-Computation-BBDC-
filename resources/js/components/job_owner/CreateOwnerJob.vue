@@ -55,6 +55,9 @@
               <option value='link_file'>
                 File of links
               </option>
+              <option value='data_value'>
+                Value
+              </option>
             </select>
           </div>
         </div>
@@ -76,7 +79,7 @@
           </div>
         </div>
         <!-- if data type is link -->
-        <div class="form-group row" v-else>
+        <div class="form-group row" v-else-if="data_type == 'link'">
           <div class="col-sm-2"></div>
           <label for="data_link" class="col-sm-2 col-form-label">Data File Link</label>
           <div class="col-sm-5">
@@ -88,7 +91,19 @@
             </template>
             </div>
         </div>
-
+        <!-- if data type is value -->
+        <div class="form-group row" v-else>
+          <div class="col-sm-2"></div>
+          <label for="data_value" class="col-sm-2 col-form-label">Value</label>
+          <div class="col-sm-5">
+            <input v-model="model.data_value" type="text" class="form-control"
+              :class= "[errors['data_value'] !== undefined  && validName === false  ? 'is-invalid' : '']"
+              id="data_value" name="data_value" placeholder="Enter your job input data value"/>
+            <template v-if="errors['data_value']!== undefined">
+              <span class="error invalid-feedback" v-for="(error_message,index) in errors['data_value']" :key="'data_value'+index">{{error_message}}</span>
+            </template>
+            </div>
+        </div>
         <!-- expire date field -->
         <div class="form-group row">
           <div class="col-sm-2"></div>

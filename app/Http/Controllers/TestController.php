@@ -28,15 +28,39 @@ class TestController extends Controller
 
     
     public function test(){
-       
-        // $bandwith = 'client_occupied_bandwith_size_1';
-        
-        // $request_count = Cache::get('request_count_1');
-        // $response_count = Cache::get('response_count_1');
-        // dd(Cache::get($bandwith),$request_count, $response_count);
+        $contents = 1000;
+        $number=intval($contents);
+        if($number <= 1000){
+            $range_length = 100;
+        }
+        else if($number <= 100000){
+           $range_length = 50;
+        }
+        else if($number <= 1000000){
+            $range_length = 45;
+        }
+        else if($number <= 10000000){
+            $range_length = 40;
+        }
+        else if($number <= 100000000){
+            $range_length = 30;
+        }
+        else if($number <= 100000000){
+            $range_length = 25;
+        }
 
-        // Cache::forget('last_offset');
-        dd(Cache::get('last_partition'));
+        $outputs=[];
+        for($i=2 ; $i<=$number; $i+=$range_length){
+            
+            $max = $i+$range_length-1;
+            if($max > $number){
+                $max = $number;
+            }
+            $result = $i.'-'.$max.'-'.$number ;
+            $outputs[]=$result;
+            
+        }
+        dd($outputs);
     }
     
 
@@ -78,6 +102,11 @@ class TestController extends Controller
             $topic=$job->name.'-map';
             $key_cache = $topic.'-last_offset';
             Cache::forget($key_cache);
+            $topic=$job->name.'-map';
+            Cache::forget( $topic.'-last_offset');
+            // $topic=$job->name.'-reduce';
+            // $consume_count_key =  $topic.'-consume-count';
+            // Cache::forget($consume_count_key);
 
             $this->initConnector('consume', $job->name.'-reduce');
             $this->cousumeAllMessage(0);
