@@ -33,7 +33,7 @@
             $this->receiveResult($request);
 
             $job_id=$request->job_id;
-            $nextData = $this->getData($job_id);;
+            $nextData = $this->getData($job_id);
             $hasNewTask = 0 ;
                 
             if($nextData){
@@ -86,7 +86,7 @@
             throw new \Exception ('device id is not valid!');
         }
         $owner_job_id = $request->data['owner_job_id'];
-        $key = \Auth::user()->id.'-'.$device_id;
+        $key = \Auth::user()->id.'-'.$device_id; //worker_id-device_id
         // time of recieving result
         $current_time = strtotime('now');
 
@@ -96,7 +96,7 @@
             throw new \Exception('task count is not valid for current result! key : '.$key);
         }
         $taskCountValue = json_decode($taskCountValue,true);
-        // time of proccessing time of client
+        // proccessing time of client
         $proccessingDurationTime = $current_time - $taskCountValue['time'];
 
         $recievedResultInfo = 'recievedResultInfo-'.$owner_job_id;
@@ -126,10 +126,10 @@
                 $topic=$task->job->name.'-reduce';
                 
                 $this->initConnector('produce',$topic);
-                
-                $service_path = '\\App\\Services\\'.ucfirst($task->job->name).'ParsingPattern';
+
                 // check if recieved result is not proper (key,value) => we should generate a proper result
                 // in finding primes we recieved an array of arrays as a result ([[2,1],[3,1],[5,1]]) 
+                $service_path = '\\App\\Services\\'.ucfirst($task->job->name).'ParsingPattern';
                 $method_exists=method_exists($service_path,'generateProperMapResult');
                 foreach($results as $key=>$value){
 
@@ -151,7 +151,7 @@
             }
             else{
                 // throw new \Exception ('there is no pending map data. exist status: '.$exists_status);
-                // put results away -> it means data has gotten by another client and recieved data from that client and redis be cleared
+                // put results away -> it means data has gotten by another client and recieved data from that client and redis was cleared
                 // so if this result save there will be a duplicate
                 
             }

@@ -3092,7 +3092,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 return _context3.abrupt("return", response.data);
 
               case 7:
-                return _context3.abrupt("return", _this4.currentData);
+                return _context3.abrupt("return", _this4.currentData.value);
 
               case 10:
                 _context3.prev = 10;

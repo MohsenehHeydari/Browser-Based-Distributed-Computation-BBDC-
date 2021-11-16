@@ -44,6 +44,7 @@ class OwnerJobController extends Controller
             $date = Carbon::create($date[0], $date[1], $date[2]);
             $ownerJob = OwnerJob::create([
                 'name' => $request->input('name'),
+                'data_value' => $request->input('data_value'),
                 'expire_date' => $date,
                 'owner_id' => \Auth::user()->id,
                 'status' => 'init',

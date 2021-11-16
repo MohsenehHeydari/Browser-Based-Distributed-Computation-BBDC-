@@ -1,4 +1,6 @@
+console.log(data,'data');
 data=data.split('-');
+
     let min=+data[0];
     let max=+data[1];
     let N=+data[2];

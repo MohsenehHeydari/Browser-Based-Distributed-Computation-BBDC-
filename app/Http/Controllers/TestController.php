@@ -104,6 +104,7 @@ class TestController extends Controller
             Cache::forget($key_cache);
             $topic=$job->name.'-map';
             Cache::forget( $topic.'-last_offset');
+            Cache::forget('ownerJobFinished-'.$job->id);
             // $topic=$job->name.'-reduce';
             // $consume_count_key =  $topic.'-consume-count';
             // Cache::forget($consume_count_key);

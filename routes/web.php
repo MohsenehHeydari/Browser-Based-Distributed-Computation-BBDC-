@@ -43,7 +43,7 @@ Route::get('test/{f?}', 'TestController@index');
 
 Route::get('/panel/{type}', 'PanelController@index')->name('panel')->middleware('auth');
 
-
+//worker group routes
 Route::group(['prefix' => 'worker', 'middleware' => 'auth'], function () {
     Route::get('/taskRequest/{id}', 'TaskController@getTask')->middleware('bandwidth_assessment')->name('getTask');
     Route::post('/sendResult', 'DataController@sendResult')->middleware('bandwidth_assessment')->name('sendResult');

@@ -160,7 +160,7 @@ import axios from "axios";
                         return response.data;
                     }
 
-                    return this.currentData;
+                    return this.currentData.value;
                    
                 } catch (error) {
                     console.log('data file is not valid!')

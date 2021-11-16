@@ -18,6 +18,7 @@ class CreateOwnerJobsTable extends Migration
             $table->integer('owner_id');
             $table->integer('job_id');
             $table->string('name');
+            $table->string('data_value')->nullable();
             $table->string('data_url')->nullable();
             $table->text('data_links')->nullable();
             $table->integer('data_count'); //count of decomposed data
