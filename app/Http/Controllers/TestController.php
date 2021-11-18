@@ -24,43 +24,11 @@ class TestController extends Controller
             throw new \Exception("method {$f} does not exist");
         }
     }
-
-
     
     public function test(){
-        $contents = 1000;
-        $number=intval($contents);
-        if($number <= 1000){
-            $range_length = 100;
-        }
-        else if($number <= 100000){
-           $range_length = 50;
-        }
-        else if($number <= 1000000){
-            $range_length = 45;
-        }
-        else if($number <= 10000000){
-            $range_length = 40;
-        }
-        else if($number <= 100000000){
-            $range_length = 30;
-        }
-        else if($number <= 100000000){
-            $range_length = 25;
-        }
-
-        $outputs=[];
-        for($i=2 ; $i<=$number; $i+=$range_length){
-            
-            $max = $i+$range_length-1;
-            if($max > $number){
-                $max = $number;
-            }
-            $result = $i.'-'.$max.'-'.$number ;
-            $outputs[]=$result;
-            
-        }
-        dd($outputs);
+        $line = '256,256,';
+        $data= explode(',',trim($line,',')); // trim delete , 
+        dd(count($data));
     }
     
 

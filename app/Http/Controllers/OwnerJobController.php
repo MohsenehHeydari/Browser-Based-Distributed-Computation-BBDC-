@@ -73,16 +73,14 @@ class OwnerJobController extends Controller
         
     }
 
-    public function list()
-    {
+    public function list(){
 
         $user = \Auth::user();
         $owner_jobs = OwnerJob::where('owner_id', $user->id)->get();
         return ['ownerJobList' => $owner_jobs];
     }
 
-    public function delete($id)
-    {
+    public function delete($id){
         $user = \Auth::user();
         $owner_job = OwnerJob::where('owner_id', $user->id)->findOrFail($id); // user can just delete his own devices
         $owner_job->delete();
@@ -90,15 +88,14 @@ class OwnerJobController extends Controller
         return ['message' => 'owner job' . $id . ' has deleted.'];
     }
 
-    public function getBestDevice($owner_job)
-    {
+    public function getBestDevice($owner_job){
         // $owner_job = OwnerJob::find(1);
         // choose best device among online users which choose this job and are idle
         $online_users = json_decode(Redis::get('online_users'), true);
         if($online_users){
             $available_devices = [];
             foreach ($online_users as $online_user) {
-                if ($online_user['job_id'] == $owner_job->job_id && $online_user['working_status'] == false) {
+                if($online_user['job_id'] == $owner_job->job_id && $online_user['working_status'] == false) {
                     $available_devices[] = $online_user['device_id'];
                 }
             }
@@ -151,7 +148,7 @@ class OwnerJobController extends Controller
                     $rank += (29 * $d->avg_success_percent) / 100; // success_percent has 29/100 score
 
                     // rank of result count =(current_device_result_count / max of result_count) * 25
-                    $rank += ((($d->total_result_count)) / $max_result_count) * 25; // total result count has 25/100 score
+                    $rank += (($d->total_result_count) / $max_result_count) * 25; // total result count has 25/100 score
 
                     // we reverse the current device processing duration
                     $temp_current_proccessing_time = $ceiling - $d->avg_proccessing_duration;

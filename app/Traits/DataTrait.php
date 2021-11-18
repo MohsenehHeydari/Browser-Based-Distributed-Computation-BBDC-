@@ -391,32 +391,29 @@ trait DataTrait{
     //last step check pending data
     public function getPendingData($owner_job,$pending_group=null,$currentConsumePartition=null){
         
-       
-
         $keys=[];
         if($pending_group !== null){
              $keys=Redis::hKeys($pending_group);
         }
-       
-                if(count($keys)>0){
-                    $key=$keys[0];
-                    return  json_decode(Redis::hGet($pending_group,$key),true);
-                }
-                else{
+        if(count($keys)>0){
+            $key=$keys[0];
+            return  json_decode(Redis::hGet($pending_group,$key),true);
+        }
+        else{
 
-                    if($owner_job->status == 'done'){
-                        return $this->getData($owner_job->job_id);
-                    }
+            if($owner_job->status == 'done'){
+                return $this->getData($owner_job->job_id);
+            }
 
-                    try{
+            try{
 
-                        $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
-                        if($total_result === null){
+                $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
+                if($total_result === null){
                             
-                            $owner_job->status='done';
-                            $owner_job->save();
-                            return $this->getData($owner_job->job_id);
-                        }
+                    $owner_job->status='done';
+                    $owner_job->save();
+                    return $this->getData($owner_job->job_id);
+                }
 
                         $result_collection=collect($total_result)->sortKeys();
                         $string_result = '';
@@ -558,7 +555,6 @@ trait DataTrait{
                 'worker_id' => $worker_id,
                 'device_id' => $device_id,
                 'owner_job_id' => $owner_job->id])->first();
-
 
             if($process_log == null){
 

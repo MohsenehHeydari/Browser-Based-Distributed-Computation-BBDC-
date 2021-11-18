@@ -24,6 +24,6 @@ function findPrimes(n=2,m=10){
 
 }
 
-findPrimes(2,2000000);
+findPrimes(2,100000);
 
 
