@@ -60,6 +60,7 @@ trait KafkaConnect
         $this->topic->consumeStart($partition,$last_offset);
         
         $message = $this->topic->consume($partition,1500);
+//        dd($message,$last_offset,$key_cache,$this->topic);
 
         if($message){
             switch ($message->err) {
@@ -67,7 +68,7 @@ trait KafkaConnect
                     // var_dump($message);
                     $result = json_decode($message->payload,true);
                     if($key_cache !== null){
-                         Cache::put($key_cache,$message->offset+1,6000);
+                         Cache::put($key_cache,$message->offset+1,60000);
                     }
                     return $result;
                     break;
@@ -89,8 +90,7 @@ trait KafkaConnect
         $result = [];
        
         $this->topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
-    
-        $j=0;
+
         $partition_end_status=false;
         
         while (!$partition_end_status) {

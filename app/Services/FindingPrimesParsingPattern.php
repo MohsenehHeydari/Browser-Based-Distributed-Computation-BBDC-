@@ -18,7 +18,8 @@ class FindingPrimesParsingPattern {
         //get file content
         // decomposition pattern for primes
         // dd($request);
-        if($owner_job->data_value == null){
+        $contents = $owner_job->data_value;
+        if($contents == null){
             if($request->data_type === 'file'){
                 $contents = trim(file_get_contents($request->file('data_file')->getRealPath()));
                 $owner_job->data_value = $contents;
@@ -31,34 +32,35 @@ class FindingPrimesParsingPattern {
                 throw new \Exception('input is not valid!');
             }
         }
-        else{
-                $contents = $owner_job->data_value;
-        }
 
        // 2-100-10000000
        $number=intval($contents);
         if($number <= 1000){
-            $range_length = 100;
+            $range_length = 50;
+        }
+        else if($number <= 10000){
+           $range_length = 100;
         }
         else if($number <= 100000){
-           $range_length = 50;
+           $range_length = 5000;
         }
         else if($number <= 1000000){
-            $range_length = 45;
+            $range_length = 5000;
         }
         else if($number <= 10000000){
-            $range_length = 40000;
+            $range_length = 50000;
         }
         else if($number <= 100000000){
-            $range_length = 30;
+            $range_length = 100000;
         }
-        else if($number <= 100000000){
-            $range_length = 25;
+        else {
+            $range_length = 500000;
         }
         $ranges = [];
         $index = 1;
+        $counter=0;
         for($i=2 ; $i<=$number; $i+=$range_length){
-            
+            $counter++;
             $max = $i+$range_length-1;
             if($max > $number){
                 $max = $number;
@@ -71,7 +73,7 @@ class FindingPrimesParsingPattern {
         }
 
         $map_values = 'map_values-'.$owner_job->job_id;
-        Cache::put($map_values,json_encode($ranges),600);
+        Cache::put($map_values,$ranges,60000);
 
         return $index;
     }
@@ -82,34 +84,30 @@ class FindingPrimesParsingPattern {
     }
     public function getReducingData($owner_job){
         $topic=$owner_job->job->name.'-reduce';
-        $result_count= [];
-        $final_result="";
+
         for($partition = 0; $partition < 4; $partition++){
+            $result_count= [];
             $this->initConnector('consume',$topic);
-            $all_result = [];
-            while(count($all_result) == 0 && $partition < $this->reduce_partition_count){
-                $all_result=$this->cousumeAllMessage($partition);
-               
-                foreach($all_result as $index=>$result){
+            $all_result=$this->cousumeAllMessage($partition);
+            foreach($all_result as $index=>$result){
 
-                    $key = $result['key'];
-                    $value = $result['value'];
-                    if(!isset($result_count[$key])){
-                        $result_count[$key]=$value;
-                    }
-                    else{
-                        $result_count[$key]=$result_count[$key]+1;
-                    }
+                $key = $result['key'];
 
+                if(!isset($result_count[$key])){
+                    $result_count[$key]=1;
+                }
+                else{
+                    $result_count[$key]=$result_count[$key]+1;
                 }
 
             }
-        }
-        foreach($result_count as $key=>$value){
-            if($value === 1){
-                Redis::hSet('resultReduce_'.$owner_job->job_id,$key,$value);
+            foreach($result_count as $key=>$value){
+                if($value === 1){
+                    Redis::hSet('resultReduce_'.$owner_job->job_id,$key,$value);
+                }
             }
         }
+
 
         return $this->getPendingData($owner_job);
 
@@ -135,26 +133,24 @@ class FindingPrimesParsingPattern {
         if($task){
 
             $map_values = 'map_values-'.$owner_job->job_id;
-            $data = Cache::get($map_values);
+            $data_values = Cache::get($map_values);
 
-            if($data === null){
+            if($data_values === null){
 
                 $this->createFiles(request(), $owner_job);
-                $data = Cache::get($map_values);
+                $data_values = Cache::get($map_values);
 
             }
-            // dd($data);
-            $data = json_decode($data);
 
             Cache::forget($map_values);
 
-            if(count($data)>0){
+            if(count($data_values)>0){
                 $first=[];
 
                 $topic=$owner_job->job->name.'-map';
                 $this->initConnector('produce',$topic);
 
-                foreach($data as $index=>$value){
+                foreach($data_values as $index=>$value){
 
                     $data=[
                         'value'=>$value,
@@ -174,17 +170,17 @@ class FindingPrimesParsingPattern {
                 //save first to redis
                 Redis::hSet('pendingMapData_'.$owner_job->job_id, $first['index'], json_encode($first)); //index is the same as data id in DB
 
-                Cache::put('MapDataCount_'.$owner_job->job_id,count($data)-1,600);
+                Cache::put('MapDataCount_'.$owner_job->job_id,count($data_values)-1,60000);
 
                
                 $process_log_info['description'].= 'mapping process is started at '.Carbon::now();
                 
-                Cache::put('start_ownerJob_date_'.$owner_job->job_id,Carbon::now(),600);
+                Cache::put('start_ownerJob_date_'.$owner_job->job_id,Carbon::now(),60000);
 
                 $owner_job->status='mapping';
                 $owner_job->process_log = json_encode($process_log_info); 
                 $owner_job->save();
-                // return $first
+//                dd($data_values);
                 return $first;
                 
             }else{

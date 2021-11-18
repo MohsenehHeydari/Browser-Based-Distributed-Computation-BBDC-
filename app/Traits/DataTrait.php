@@ -175,12 +175,12 @@ trait DataTrait{
                 //save first to redis
                 Redis::hSet('pendingMapData_'.$owner_job->job_id, $first['index'], json_encode($first)); //index is the same as data id in DB
 
-                Cache::put('MapDataCount_'.$owner_job->job_id,count($files)-1,600);
+                Cache::put('MapDataCount_'.$owner_job->job_id,count($files)-1,60000);
 
                
                 $process_log_info['description'].= 'mapping process is started at '.Carbon::now();
                 
-                Cache::put('start_ownerJob_date_'.$owner_job->job_id,Carbon::now(),600);
+                Cache::put('start_ownerJob_date_'.$owner_job->job_id,Carbon::now(),60000);
 
                 $owner_job->status='mapping';
                 $owner_job->process_log = json_encode($process_log_info); 
@@ -239,15 +239,17 @@ trait DataTrait{
             $key_cache = $topic.'-last_offset';
             $data = $this->consume(0,$key_cache);
 
+
             if($data !== null){
                   // MapDataCount - 1
-                    $count = Cache::put('MapDataCount_'.$owner_job->job_id,$count-1,600);
+                   Cache::put('MapDataCount_'.$owner_job->job_id,$count-1,60000);
 
                     Redis::hSet('pendingMapData_'.$owner_job->job_id, $data['index'], json_encode($data));
+//                dd($data);
                     return $data;
             }
             else{
-                $count = Cache::put('MapDataCount_'.$owner_job->job_id,0,600);
+                Cache::put('MapDataCount_'.$owner_job->job_id,0,60000);
                 Cache::forget($key_cache);
                 $allValues = Redis::hVals('pendingMapData_'.$owner_job->job_id);
                 if(count($allValues) > 0){
@@ -330,17 +332,16 @@ trait DataTrait{
             if($partition < $this->reduce_partition_count){
                 
                 $this->initConnector('consume',$topic);
-                $all_result = [];
-                while(count($all_result) == 0 && $partition < $this->reduce_partition_count){
+                while($partition < $this->reduce_partition_count){
                     $all_result=$this->cousumeAllMessage($partition);
                     // $consume_count+=1;
-                    // Cache::put($consume_count_key,$consume_count,600);
+                    // Cache::put($consume_count_key,$consume_count,60000);
                     $partition++;
                 }
                 // if($partition >= $this->reduce_partition_count){
                 //     $partition = 0;
                 // }
-                Cache::put($currentConsumePartition,$partition);
+                Cache::put($currentConsumePartition,$partition,60000);
                 if(count($all_result) == 0){
                     return $this->getPendingData($owner_job,$pending_group,$currentConsumePartition);
                 }
@@ -427,9 +428,9 @@ trait DataTrait{
                         $owner_job->save();
                         
                         if($currentConsumePartition !== null){
-                            Cache::put($currentConsumePartition,0);
+                            Cache::put($currentConsumePartition,0,60000);
                         }
-                        Cache::put('ownerJobFinished-'.$owner_job->job_id,$owner_job->id,600);
+                        Cache::put('ownerJobFinished-'.$owner_job->job_id,$owner_job->id,60000);
                         // $this->getOwnerJobProcessLog($owner_job);
 
                         // // $topic=$owner_job->job->name.'-reduce';

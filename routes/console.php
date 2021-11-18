@@ -191,7 +191,7 @@ Artisan::command('testSingleConsumer', function () {
                         $objectMessage = json_decode($message->payload);
                         $this->comment('message is:'.$message->payload.'-time is:'.$first_of_consume->floatDiffInSeconds(Carbon::now()));
                         $this->comment('offset is:'.$message->offset);
-                        Cache::put('last_offset',$message->offset+1,6000);
+                        Cache::put('last_offset',$message->offset+1,60000);
                         return;
                         break;
                     case RD_KAFKA_RESP_ERR__PARTITION_EOF:
@@ -210,8 +210,8 @@ Artisan::command('testSingleConsumer', function () {
                 if($last_partition >= 3){
                     $last_partition = -1;
                 }
-                Cache::put('last_partition',++$last_partition,600);
-                Cache::put('last_offset',RD_KAFKA_OFFSET_STORED,6000);
+                Cache::put('last_partition',++$last_partition,60000);
+                Cache::put('last_offset',RD_KAFKA_OFFSET_STORED,60000);
                 $partition_end_status=true;
             }
             
