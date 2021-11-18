@@ -3,19 +3,10 @@
     namespace App\Http\Controllers;
 
     use Illuminate\Http\Request;
-    use Illuminate\Support\Facades\Storage;
     use Illuminate\Support\Facades\Redis;
-    use Illuminate\Support\Facades\Cache;
-
-    use App\Models\Data;
-    use App\Models\Device;
     use App\Models\OwnerJob;
-    use App\Models\Job;
-    use App\Models\ProcessLog;
-    use App\Models\IntermediateResult;
     use App\Models\Task;
-    
-    use Carbon\Carbon;
+
 
     use App\Traits\DataTrait;
     use App\Traits\KafkaConnect;
@@ -132,7 +123,6 @@
                 $service_path = '\\App\\Services\\'.ucfirst($task->job->name).'ParsingPattern';
                 $method_exists=method_exists($service_path,'generateProperMapResult');
                 foreach($results as $key=>$value){
-
                     if($method_exists){
                         $temp_result=app($service_path)->generateProperMapResult($key,$value);
                         $key=$temp_result['key'];
@@ -146,7 +136,7 @@
                 }
                 Redis::hDel('pendingMapData_'.$request->job_id, $request->data['index']);
                 // $count=Cache::get('MapDataCount_'.$request->job_id);
-                // Cache::put('MapDataCount_'.$request->job_id,$count-1,600);
+                // Cache::put('MapDataCount_'.$request->job_id,$count-1,60000);
                 // throw new \Exception ('there is map data. exist status: '.$exists_status.'result count: '.count($results).'topic name: '.$topic);
             }
             else{
@@ -155,7 +145,6 @@
                 // so if this result save there will be a duplicate
                 
             }
-
         }
     }
 
@@ -183,4 +172,3 @@
 
 
 
-    

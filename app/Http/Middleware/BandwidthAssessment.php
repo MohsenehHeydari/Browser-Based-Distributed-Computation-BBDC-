@@ -22,6 +22,9 @@ class BandwidthAssessment
      */
     public function handle(Request $request, Closure $next)
     {
+        set_time_limit(3600);
+        ini_set('memory_limit',-1);
+//        dd( memory_get_usage());
         //before controller
         $job_id=0;
     
@@ -39,7 +42,7 @@ class BandwidthAssessment
         
         $request_count = Cache::get('request_count_'.$job_id);
         $request_count++;
-        Cache::put('request_count_'.$job_id,$request_count,600);
+        Cache::put('request_count_'.$job_id,$request_count,60000);
         
         $server_process_duration_time = Cache::get('server_process_duration_time_'.$job_id);
         $recieve_request_time = Carbon::now();
@@ -51,17 +54,19 @@ class BandwidthAssessment
         // assess bandwith when recieve data from worker (maybe result)
         // request->all is all data(result) sent by worker in POST request
         $request_data=$request->all();
-        $request_size=0;
         //request data is the result of map/reduce task has been sent from worker
         if(count($request_data)>0){
+
             # `strlen` returns number of chars in a string. Each char is 1 byte.
             # So to get size in bits, multiply `strlen` results by 8. Divide by
             # 1024 for KB or KiB. Divide by 1000 for kB.
             $serialized_data = json_encode($request_data);
             $request_size = strlen($serialized_data);
             $bandwidth_size += $request_size;
-            Cache::put($bandwith,$bandwidth_size,600);
+            Cache::put($bandwith,$bandwidth_size,60000);
+//            dd($request_data);
         }
+
         // else if count($data) = 0 it means there is no data so it's not necessory to transform to json and assess size    
 
         //assess bandwith when return data to worker(maybe a task info)
@@ -82,17 +87,17 @@ class BandwidthAssessment
         if($owner_job_id === null){
             $response_count = Cache::get('response_count_'.$job_id);
             $response_count++;
-            Cache::put('response_count_'.$job_id,$response_count,600);
+            Cache::put('response_count_'.$job_id,$response_count,60000);
     
             $bandwidth_size += $response_size;
-            Cache::put($bandwith,$bandwidth_size,600);
+            Cache::put($bandwith,$bandwidth_size,60000);
            
             $server_process_duration_time+=$req_and_res_duration;
-            Cache::put('server_process_duration_time_'.$job_id,$server_process_duration_time,600); 
+            Cache::put('server_process_duration_time_'.$job_id,$server_process_duration_time,60000);
     
             $server_process_duration_time_detail = Cache::get('server_process_duration_time_detail_'.$job_id)??'';//if it was null set '';
             $server_process_duration_time_detail .= $req_and_res_duration.',';
-            Cache::put('server_process_duration_time_detail_'.$job_id,$server_process_duration_time_detail,600);
+            Cache::put('server_process_duration_time_detail_'.$job_id,$server_process_duration_time_detail,60000);
         }
         
        

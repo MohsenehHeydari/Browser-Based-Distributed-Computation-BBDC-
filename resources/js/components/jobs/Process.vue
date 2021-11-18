@@ -107,7 +107,7 @@ import axios from "axios";
                     }catch(error){
                         if(this.failedCount<=20){
                             this.failedCount+=1;
-                            return await getProcessData();
+                            return await this.getProcessData();
                         }else{
                             throw new Error('failed count is more than 10!');
                         }
@@ -160,7 +160,10 @@ import axios from "axios";
                         return response.data;
                     }
 
-                    return this.currentData.value;
+                   if(this.currentData.key === undefined){
+                       return this.currentData.value;
+                   }
+                   return this.currentData;
                    
                 } catch (error) {
                     console.log('data file is not valid!')
