@@ -27,7 +27,7 @@ class MatrixMultiplicationParsingPattern{
         $column_count = 0;
         $current_matrix = 'A';
     
-        // 1,2,3=>[1,2,3]
+        // [1,2,3]=>1,2,3
         // 4,5,6
         // x   
         // 7,8,9
@@ -51,7 +51,7 @@ class MatrixMultiplicationParsingPattern{
                 $current_matrix = 'B';
                 continue;
             }
-            $data= explode(',',trim($line,',')); // trim delete , 
+            $data = explode(',',trim($line,',')); // trim delete , 
             $data_count = count($data);
                 
             if($data_count == 0){

@@ -23,7 +23,7 @@ class OwnerJobController extends Controller
         if($request->data_type === 'file' || $request->data_type === 'link_file'){
             // $rules['data_file']="required_without:data_link|max:1000|mimes:txt, text"; // check mime type && size
 
-            $rules['data_file']="required_without:data_link|max:1000"; // check mime type && size
+            $rules['data_file']="required_without:data_link|max:100000"; // check mime type && size
         }
         if($request->data_type === 'link'){
             $rules['data_link']='required';
