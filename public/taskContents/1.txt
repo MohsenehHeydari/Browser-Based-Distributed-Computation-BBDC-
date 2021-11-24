@@ -1,6 +1,7 @@
 let result={}
 
-    data.replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>",.\/? ])+/g, '-').replace(/^(-)+|(-)+$/g,'').split('-').forEach( word => {
+    data.replace(/([~!@#$%^&*()_+=`{}\[\]\|\\:;'<>\s",.\/? ])+/g, '-').replace(/^(-)+|(-)+$/g,'').split('-').forEach( word => {
+        word = word.replace(/\s/g, "");
         if(word !== " " && word !== ""){
             if(result[word]){
                 result[word]=result[word]+1
