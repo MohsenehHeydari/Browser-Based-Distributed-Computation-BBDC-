@@ -13,6 +13,7 @@ class MatrixMultiplicationParsingPattern{
     use DataTrait;
     private $reduce_partition_count=4;
 
+
     public function createFiles($request, $ownerJob){
         //get file content
         // decomposition pattern for wordCount
@@ -209,7 +210,6 @@ class MatrixMultiplicationParsingPattern{
 
                 $reduce_data=[];
                 $result_count=100;
-
 
                 foreach($all_result as $index=>$result){
                     $key=$result['key'];
