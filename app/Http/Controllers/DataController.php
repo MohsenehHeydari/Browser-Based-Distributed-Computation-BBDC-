@@ -81,7 +81,7 @@
         // time of recieving result
         $current_time = strtotime('now');
 
-        $sentTaskInfo = 'sentTaskInfo-'.$owner_job_id;
+        $sentTaskInfo = 'sentTaskInfo-'.$request->job_id;
         $taskCountValue = Redis::hGet($sentTaskInfo,$key);
         if($taskCountValue == null){
             throw new \Exception('task count is not valid for current result! key : '.$key);
@@ -90,7 +90,7 @@
         // proccessing time of client
         $proccessingDurationTime = $current_time - $taskCountValue['time'];
 
-        $recievedResultInfo = 'recievedResultInfo-'.$owner_job_id;
+        $recievedResultInfo = 'recievedResultInfo-'.$request->job_id;
         $value = Redis::hGet($recievedResultInfo,$key);
         
         if($value == null){

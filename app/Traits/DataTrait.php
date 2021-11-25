@@ -89,7 +89,7 @@ trait DataTrait{
             }
             
             // save sent task count and time (base on second)->key= worker_id-device_id 
-            $sentTaskInfo = 'sentTaskInfo-'.$owner_job->id;
+            $sentTaskInfo = 'sentTaskInfo-'.$owner_job->job_id;
             $device_id = \Cookie::get('device-id');
             $key = \Auth::user()->id.'-'.$device_id;
             $value = Redis::hGet($sentTaskInfo,$key);
@@ -332,15 +332,14 @@ trait DataTrait{
             if($partition < $this->reduce_partition_count){
                 
                 $this->initConnector('consume',$topic);
-                while($partition < $this->reduce_partition_count){
+                $all_result=[];
+                while($partition < $this->reduce_partition_count && count($all_result) ==0){
                     $all_result=$this->cousumeAllMessage($partition);
                     // $consume_count+=1;
                     // Cache::put($consume_count_key,$consume_count,60000);
                     $partition++;
                 }
-                // if($partition >= $this->reduce_partition_count){
-                //     $partition = 0;
-                // }
+//                dd($all_result);
                 Cache::put($currentConsumePartition,$partition,60000);
                 if(count($all_result) == 0){
                     return $this->getPendingData($owner_job,$pending_group,$currentConsumePartition);
@@ -392,35 +391,46 @@ trait DataTrait{
     //last step check pending data
     public function getPendingData($owner_job,$pending_group=null,$currentConsumePartition=null){
         
+       
+
         $keys=[];
         if($pending_group !== null){
              $keys=Redis::hKeys($pending_group);
         }
-        if(count($keys)>0){
-            $key=$keys[0];
-            return  json_decode(Redis::hGet($pending_group,$key),true);
-        }
-        else{
-
-            if($owner_job->status == 'done'){
-                return $this->getData($owner_job->job_id);
-            }
-
-            try{
-
-                $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
-                if($total_result === null){
-                            
-                    $owner_job->status='done';
-                    $owner_job->save();
-                    return $this->getData($owner_job->job_id);
+       
+                if(count($keys)>0){
+                    $key=$keys[0];
+                    return  json_decode(Redis::hGet($pending_group,$key),true);
                 }
+                else{
 
-                        $result_collection=collect($total_result)->sortKeys();
-                        $string_result = '';
-                        foreach($result_collection as $key=>$value){
-                            $string_result .= $key. ' : ' .$value. "\n"; 
+                    if($owner_job->status == 'done'){
+                        return $this->getData($owner_job->job_id);
+                    }
+
+                    try{
+
+                        $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
+                        if($total_result === null){
+                            
+                            $owner_job->status='done';
+                            $owner_job->save();
+                            return $this->getData($owner_job->job_id);
                         }
+
+                        $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
+                        $format_method_exists = method_exists($service_path,'formatFinalResult');
+                        if($format_method_exists){
+                            $string_result = app($service_path)->formatFinalResult($total_result);
+                        }
+                        else{
+                            $result_collection=collect($total_result)->sortKeys();
+                            $string_result = '';
+                            foreach($result_collection as $key=>$value){
+                                $string_result .= $key. ' : ' .$value. "\n";
+                            }
+                        }
+
                         $final_result_path= 'results/'.$owner_job->job->name.'/'.$owner_job->name.'-'.$owner_job->id.'.txt'; //creating url 
                         Storage::disk('public')->put($final_result_path, $string_result);//store data in file
                         $owner_job->status='done';
@@ -513,10 +523,10 @@ trait DataTrait{
         $this->redisDeleteAll($pending_reduce_data);
         $result_reduce='resultReduce_'.$owner_job->job_id;
         $this->redisDeleteAll($result_reduce);
-        $sentTaskInfo = 'sentTaskInfo-'.$owner_job->id;
+        $sentTaskInfo = 'sentTaskInfo-'.$owner_job->job_id;
         $this->redisDeleteAll($sentTaskInfo);
-        $recievedResultInfo = 'recievedResultInfo-'.$owner_job->id;
-        $this->redisDeleteAll($recievedResultInfo);
+        $receivedResultInfo = 'recievedResultInfo-'.$owner_job->job_id;
+        $this->redisDeleteAll($receivedResultInfo);
 
         $map_data_count='MapDataCount_'.$owner_job->job_id;
         Cache::forget($map_data_count);
@@ -546,24 +556,26 @@ trait DataTrait{
     
     public function logProcess($owner_job){
         
-        $sentTaskInfo = Redis::hGetAll('sentTaskInfo-'.$owner_job->id);
-        $recievedResultInfo = Redis::hGetAll('recievedResultInfo-'.$owner_job->id);
+        $sentTaskInfo = Redis::hGetAll('sentTaskInfo-'.$owner_job->job_id);
+        $receivedResultInfo = Redis::hGetAll('recievedResultInfo-'.$owner_job->job_id);
         
         foreach($sentTaskInfo as $key=>$taskInfo){ // key = worker_id + device_id && taskInfo = time and count of sent task
             
             [$worker_id,$device_id] = explode('-',$key);
+            // dd($key, $sentTaskInfo)
             $process_log = ProcessLog::where([
                 'worker_id' => $worker_id,
                 'device_id' => $device_id,
                 'owner_job_id' => $owner_job->id])->first();
 
+
             if($process_log == null){
 
                 $taskInfo = json_decode($taskInfo,true);
 
-                if(isset($recievedResultInfo[$key])){
+                if(isset($receivedResultInfo[$key])){
 
-                    $resultInfo = json_decode($recievedResultInfo[$key],true); // array of time and count
+                    $resultInfo = json_decode($receivedResultInfo[$key],true); // array of time and count
                     $successPercent = ($resultInfo['count']/$taskInfo['count'])*100;
                     $avgProcessingDurationTime = $resultInfo['time']/$resultInfo['count']; //avg = processingDurationTime/resultCounts
                     $resultCount = $resultInfo['count'];

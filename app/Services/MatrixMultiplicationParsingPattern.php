@@ -1,9 +1,17 @@
 <?php
 namespace App\Services;
+use App\Models\Task;
+use App\Traits\DataTrait;
+use App\Traits\KafkaConnect;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 // use IIlluminate\Validation\ValidationException;
 
 class MatrixMultiplicationParsingPattern{
+    use KafkaConnect;
+    use DataTrait;
+    private $reduce_partition_count=4;
 
 
     public function createFiles($request, $ownerJob){
@@ -21,14 +29,12 @@ class MatrixMultiplicationParsingPattern{
             return strlen($value) > 0;
         });
 
-        $index = 1;
         $first_matrix_data = [];
         $second_matrix_data = [];
-        $row_count = 0;
-        $column_count = 0;
+
         $current_matrix = 'A';
     
-        // [1,2,3]=>1,2,3
+        // 1,2,3=>[1,2,3]
         // 4,5,6
         // x   
         // 7,8,9
@@ -52,7 +58,7 @@ class MatrixMultiplicationParsingPattern{
                 $current_matrix = 'B';
                 continue;
             }
-            $data = explode(',',trim($line,',')); // trim delete , 
+            $data= explode(',',trim($line,',')); // trim delete , 
             $data_count = count($data);
                 
             if($data_count == 0){
@@ -121,14 +127,19 @@ class MatrixMultiplicationParsingPattern{
             // Storage::disk('public')->put($url, $string_data);
             // $urls[]=$url;
 
-           
+
+            $row_data="";
             foreach($row as $column_index=>$column){
                 $string_data = 'A,'.($row_index +1);
-                $string_data .=','.($column_index+1).','.$first_matrix_row_count.':'.$column;
-                $url = 'data/' . $request->input('name') . $ownerJob->id . '/A-' . $row_index.'-'.$column_index . '.txt';
-                Storage::disk('public')->put($url, $string_data);
-                $urls[]=$url;
+                $string_data .=','.$first_matrix_row_count.':'.$column;
+                if($first_matrix_row_count>$column_index+1){
+                    $string_data.="\n";
+                }
+                $row_data.=$string_data;
             }
+            $url = 'data/' . $request->input('name') . $ownerJob->id . '/A-' . $row_index . '.txt';
+            Storage::disk('public')->put($url, $row_data);
+            $urls[]=$url;
         }
         foreach($second_matrix_data as $row_index=>$row){
 
@@ -137,14 +148,18 @@ class MatrixMultiplicationParsingPattern{
             // Storage::disk('public')->put($url, $string_data);
             // $urls[]=$url;
 
-           
+            $row_data="";
             foreach($row as $column_index=>$column){
                 $string_data = 'B,'.($row_index +1);
-                $string_data .=','.($column_index+1).','.$second_matrix_column_count.':'.$column;
-                $url = 'data/' . $request->input('name') . $ownerJob->id . '/B-' . $row_index.'-'.$column_index . '.txt';
-                Storage::disk('public')->put($url, $string_data);
-                $urls[]=$url;
+                $string_data .=','.$second_matrix_column_count.':'.$column;
+                if($second_matrix_column_count>$column_index+1){
+                    $string_data.="\n";
+                }
+                $row_data.=$string_data;
             }
+            $url = 'data/' . $request->input('name') . $ownerJob->id . '/B-' . $row_index . '.txt';
+            Storage::disk('public')->put($url, $row_data);
+            $urls[]=$url;
         }
         // dd($urls);
         return count($urls);
@@ -194,7 +209,7 @@ class MatrixMultiplicationParsingPattern{
                 $waiting_result=[];
 
                 $reduce_data=[];
-                $result_count=100;
+                $result_count=1;
 
                 foreach($all_result as $index=>$result){
                     $key=$result['key'];
@@ -232,21 +247,12 @@ class MatrixMultiplicationParsingPattern{
                         $pending_result['task_id']=$task->id;
                         $pending_result['owner_job_id']=$owner_job->id;
                     }else{
-                        if($pending_result['key'] === $key){
-                            $pending_result['value'].=','.$value;
-                        }else{
-                            if(!isset($waiting_result[$key])){
-                                $waiting_result[$key]=[
-                                    'key'=>$key,
-                                    'value'=>$value,
-                                    'task_id'=>$task->id,
-                                    'owner_job_id'=>$owner_job->id
-                                ];
-
-                            }else{
-                                $waiting_result[$key]['value'].=','.$value;
-                            }
-                        }
+                        $waiting_result[$key]=[
+                            'key'=>$key,
+                            'value'=>$value,
+                            'task_id'=>$task->id,
+                            'owner_job_id'=>$owner_job->id
+                        ];
                     }
                 }
                 Redis::hSet($pending_group,$pending_result['key'],json_encode($pending_result));

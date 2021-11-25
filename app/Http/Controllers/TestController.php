@@ -26,9 +26,10 @@ class TestController extends Controller
     }
     
     public function test(){
-        $line = '256,256,';
-        $data= explode(',',trim($line,',')); // trim delete , 
-        dd(count($data));
+        // $line = '256,256,';
+        // $data= explode(',',trim($line,',')); // trim delete , 
+        // dd(\Cookie::get('device-id'));
+        dd(Redis::hGetAll('sentTaskInfo-9'));
     }
     
 
