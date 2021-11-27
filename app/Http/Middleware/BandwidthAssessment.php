@@ -106,8 +106,9 @@ class BandwidthAssessment
             // dd($owner_job_id, $owner_job->status);
             if($owner_job->status === 'done'){
 
+                if( (Cache::get('logStatus-'.$owner_job_id)) == null){
+                
                 $data_trait_service = new DataTraitService();
-
                 $process_log_info = $data_trait_service->getOwnerJobProcessLog($owner_job);
                 
                 $data_trait_service->logProcess($owner_job);
@@ -121,8 +122,12 @@ class BandwidthAssessment
 
                 $owner_job->process_log = json_encode($process_log_info); 
                 $owner_job->save();
+                }
+                
+                Cache::put('logStatus-'.$owner_job_id,true);
                 
             }
+            
             else{
                 
                 throw new \Exception('owner job status is not done!');

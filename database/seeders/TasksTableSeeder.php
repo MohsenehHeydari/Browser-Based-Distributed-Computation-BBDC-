@@ -46,6 +46,12 @@ class TasksTableSeeder extends Seeder
             'content'=> '',
             'type'=> 'map',
         ],
+        [
+            'job_id'=> 4,
+            'name'=> 'map',
+            'content'=> '',
+            'type'=> 'map',
+        ]
     ];
     public function run()
     {

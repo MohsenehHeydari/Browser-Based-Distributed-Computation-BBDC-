@@ -29,7 +29,8 @@ class TestController extends Controller
         // $line = '256,256,';
         // $data= explode(',',trim($line,',')); // trim delete , 
         // dd(\Cookie::get('device-id'));
-        dd(Redis::hGetAll('sentTaskInfo-9'));
+        // dd(Redis::hGetAll('sentTaskInfo-9'));
+        dd(Redis::hVals('pendingMapData_4'));
     }
     
 
@@ -74,6 +75,7 @@ class TestController extends Controller
             $topic=$job->name.'-map';
             Cache::forget( $topic.'-last_offset');
             Cache::forget('ownerJobFinished-'.$job->id);
+        
             // $topic=$job->name.'-reduce';
             // $consume_count_key =  $topic.'-consume-count';
             // Cache::forget($consume_count_key);
@@ -98,7 +100,11 @@ class TestController extends Controller
 
         }
 
-
+        $owner_jobs = OwnerJob::get();
+        foreach($owner_jobs as $owner_job){
+            Cache::forget('logStatus-'.$owner_job->id);
+        }
+        
         dd('reset');
     }
 

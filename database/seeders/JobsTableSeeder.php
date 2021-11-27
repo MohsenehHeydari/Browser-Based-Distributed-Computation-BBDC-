@@ -29,8 +29,14 @@ class JobsTableSeeder extends Seeder
             'name'=>'findingPrimes',
             'description'=>'this is an example of finding prime numbers lower than input data value.',
             'map_count'=>'1',
-            'reduce_count'=>'1',
+            'reduce_count'=>'0',
         ],
+        [
+            'name'=>'mutualFriends',
+            'description'=>'this is an example of finding mutual friends.',
+            'map_count'=>'1',
+            'reduce_count'=>'0',
+        ]
     ];
     public function run()
     {

@@ -70,6 +70,7 @@ trait DataTrait{
                     break;
                 case 'mapping': 
                     $data = $this->getMappingData($owner_job);
+                    // dd($data);
                     break;
                 case 'reducing':
                     $reduce_method_exists=method_exists($service_path,'getReducingData');
@@ -231,7 +232,7 @@ trait DataTrait{
 
         $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
         $reduce_method_exists=method_exists($service_path,'getReducingData');
-
+        // dd($count);
         if($count > 0){
             
             $topic=$owner_job->job->name.'-map';
@@ -239,7 +240,7 @@ trait DataTrait{
             $key_cache = $topic.'-last_offset';
             $data = $this->consume(0,$key_cache);
 
-
+            // dd($data);
             if($data !== null){
                   // MapDataCount - 1
                    Cache::put('MapDataCount_'.$owner_job->job_id,$count-1,60000);

@@ -146,6 +146,9 @@
                 
             }
         }
+        else{
+            Redis::hDel('pendingMapData_'.$request->job_id, $request->data['index']);
+        }
     }
 
     protected function receiveReduceResult($request,$task){

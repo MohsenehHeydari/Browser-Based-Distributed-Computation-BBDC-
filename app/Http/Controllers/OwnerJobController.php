@@ -68,8 +68,8 @@ class OwnerJobController extends Controller
        
         });
         // $best_devices = json_encode($this->getBestDevice($ownerJob));
-        $redis_connection = Redis::connection();
-        $redis_connection->publish('newJob', $best_devices);
+        // $redis_connection = Redis::connection();
+        // $redis_connection->publish('newJob', $best_devices);
         
     }
 

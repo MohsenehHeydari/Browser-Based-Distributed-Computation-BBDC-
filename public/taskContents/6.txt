@@ -1,0 +1,22 @@
+
+    let result = {};
+    let [userID,friends] = data.split(':');
+    friends = friends.split(',');
+    for(let i=0; i<friends.length; i++){
+        if(friends[i] != ''){
+            for(let j=0; j<friends.length; j++){
+                if(friends[j] != '' && i != j){
+                    let first = friends[i];
+                    let second = friends[j];
+                    if(first > second){
+                        first = friends[j];
+                        second = friends[i];
+                    }
+                    let key = first+','+second;
+
+                    result[key] = userID;
+                }
+            }
+        }
+    }
+    return result;

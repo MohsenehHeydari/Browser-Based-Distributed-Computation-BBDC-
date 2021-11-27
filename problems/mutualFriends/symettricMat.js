@@ -30,9 +30,16 @@ function symmetric(N=5){
         }
     }
     for(let i = 0; i < N; i++){
-        str += mat[i].toString()+'\n';
+        str += (i+1)+':';
+        for(let j = 0; j < mat[i].length; j++){
+            if(mat[i][j] == 1){
+                str += (j+1)+',';
+            }
+        }
+        // str = str.trim(',');
+        str += '\n';
     }         
-    // console.log(str);
+    console.log(str);
     try {
         fs.writeFileSync('randomSymmetric.txt', str)
     } 
@@ -43,5 +50,5 @@ function symmetric(N=5){
     return mat;
 }
 console.time('create symmetric matrix');
-console.table(symmetric(5));
+console.table(symmetric(20));
 console.timeEnd('create symmetric matrix');
