@@ -121,18 +121,11 @@ class MatrixMultiplicationParsingPattern{
         // A,1,1,4:1,2,3
 
         foreach($first_matrix_data as $row_index=>$row){
-
-            // $string_data = 'A,'.($row_index +1).','.$first_matrix_row_count.':'.implode(',',$row);//implode trun array to string
-            // $url = 'data/' . $request->input('name') . $ownerJob->id . '/A-' . $row_index . '.txt';
-            // Storage::disk('public')->put($url, $string_data);
-            // $urls[]=$url;
-
-
             $row_data="";
             foreach($row as $column_index=>$column){
-                $string_data = 'A,'.($row_index +1);
+                $string_data = 'A,'.($row_index +1).','.($column_index+1);
                 $string_data .=','.$first_matrix_row_count.':'.$column;
-                if($first_matrix_row_count>$column_index+1){
+                if($first_matrix_column_count>$column_index+1){
                     $string_data.="\n";
                 }
                 $row_data.=$string_data;
@@ -141,16 +134,34 @@ class MatrixMultiplicationParsingPattern{
             Storage::disk('public')->put($url, $row_data);
             $urls[]=$url;
         }
+
+//        $b_inverse_matrix=[];
+//        foreach($second_matrix_data as $row_index=>$row) {
+//            foreach ($row as $column_index => $column) {
+//                if (!isset($b_inverse_matrix[$column_index])) {
+//                    $b_inverse_matrix[$column_index] = [];
+//                }
+//                $b_inverse_matrix[$column_index][$row_index] = $column;
+//            }
+//        }
+//        foreach($b_inverse_matrix as $column_index=>$row){
+//            $row_data="";
+//            foreach($row as $row_index=>$column){
+//                $string_data = 'B,'.($column_index +1);
+//                $string_data .=','.$second_matrix_column_count.':'.$column;
+//                if($second_matrix_row_count>$row_index+1){
+//                    $string_data.="\n";
+//                }
+//                $row_data.=$string_data;
+//            }
+//            $url = 'data/' . $request->input('name') . $ownerJob->id . '/B-' . $column_index . '.txt';
+//            Storage::disk('public')->put($url, $row_data);
+//            $urls[]=$url;
+//        }
         foreach($second_matrix_data as $row_index=>$row){
-
-            // $string_data = 'B,'.($row_index +1).','.$second_matrix_column_count.':'.implode(',',$row);//implode trun array to string
-            // $url = 'data/' . $request->input('name') . $ownerJob->id . '/B-' . $row_index . '.txt';
-            // Storage::disk('public')->put($url, $string_data);
-            // $urls[]=$url;
-
             $row_data="";
             foreach($row as $column_index=>$column){
-                $string_data = 'B,'.($row_index +1);
+                $string_data = 'B,'.($row_index +1).','.($column_index+1);
                 $string_data .=','.$second_matrix_column_count.':'.$column;
                 if($second_matrix_column_count>$column_index+1){
                     $string_data.="\n";
@@ -161,8 +172,13 @@ class MatrixMultiplicationParsingPattern{
             Storage::disk('public')->put($url, $row_data);
             $urls[]=$url;
         }
-        // dd($urls);
-        return count($urls);
+        return $first_matrix_row_count+$second_matrix_column_count;
+    }
+
+    public function generateProperMapResult($key, $value){ // key= index value = array of numbers like [2,1]
+        $key = $value[0];
+        $value = $value[1];
+        return ['key'=>$key,'value'=>$value];
     }
 
     public function getReducingData($owner_job){
