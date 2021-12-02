@@ -30,7 +30,8 @@ class TestController extends Controller
         // $data= explode(',',trim($line,',')); // trim delete , 
         // dd(\Cookie::get('device-id'));
         // dd(Redis::hGetAll('sentTaskInfo-9'));
-        dd(Redis::hVals('pendingMapData_4'));
+        // dd(Redis::hVals('pendingMapData_4'));
+        dd(phpinfo());
     }
     
 
