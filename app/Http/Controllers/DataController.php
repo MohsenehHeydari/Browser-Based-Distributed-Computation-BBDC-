@@ -6,6 +6,7 @@
     use Illuminate\Support\Facades\Redis;
     use App\Models\OwnerJob;
     use App\Models\Task;
+    use Carbon\Carbon;
 
 
     use App\Traits\DataTrait;
@@ -34,43 +35,42 @@
             
         }
     
-        public function receiveResult( $request)
-    {   $owner_job = OwnerJob::findOrFail($request->data['owner_job_id']);
-        if($owner_job->status == 'done'){
-            return ;
-        } 
-        $task = Task::with('job')->findOrFail($request->data['task_id']);
+        public function receiveResult( $request){
+            $owner_job = OwnerJob::findOrFail($request->data['owner_job_id']);
+            if($owner_job->status == 'done'){
+                return ;
+            } 
+            $task = Task::with('job')->findOrFail($request->data['task_id']);
 
-        $rules = [
-            // 'result' => 'required', //it should have 'result' key in request
-            // 'result.*' => 'nullable', // result should not be empty
-            'data' => 'required',
-            'data.task_id' =>'required|exists:tasks,id',
-            'data.owner_job_id' => 'required|exists:owner_jobs,id',
-            'job_id' => 'required|exists:jobs,id',
-        ];
+            $rules = [
+                // 'result' => 'required', //it should have 'result' key in request
+                // 'result.*' => 'nullable', // result should not be empty
+                'data' => 'required',
+                'data.task_id' =>'required|exists:tasks,id',
+                'data.owner_job_id' => 'required|exists:owner_jobs,id',
+                'job_id' => 'required|exists:jobs,id',
+            ];
         
-        if($task->type !== 'map'){
-           $rules['result.*']='required';
-           $rules['result']='required';
+            if($task->type !== 'map'){
+                $rules['result.*']='required';
+                $rules['result']='required';
             
-        }
+            }
 
-        $this->validate($request,$rules);
+            $this->validate($request,$rules);
 
-        // request = result+data+job_id
-        //validate data
+            // request = result+data+job_id
        
         
-        if($task->type === 'map'){
-            $this-> receiveMapResult($request,$task);
+            if($task->type === 'map'){
+                $this-> receiveMapResult($request,$task);
             
-        }else if($task->type === 'reduce'){
-            // store result in file
-            $this-> receiveReduceResult($request,$task);
-        }else {
-            throw new \Exception('task type is not valid! type: '.$task->type);
-        }
+            }else if($task->type === 'reduce'){
+                // store result in file
+                $this-> receiveReduceResult($request,$task);
+            }else {
+                throw new \Exception('task type is not valid! type: '.$task->type);
+            }
 
         $device_id = \Cookie::get('device-id');
         if(!$device_id){
@@ -110,30 +110,35 @@
         $results = $request->result;
             
         if(count($results)>0){
-            // check key exists in redis
+            // check key exists in redis-> if not exist put it away
             $exists_status=Redis::hExists('pendingMapData_'.$request->job_id, $request->data['index']);
             if($exists_status){ 
-                
+
                 $topic=$task->job->name.'-reduce';
                 
                 $this->initConnector('produce',$topic);
 
                 // check if recieved result is not proper (key,value) => we should generate a proper result
-                // in finding primes we recieved an array of arrays as a result ([[2,1],[3,1],[5,1]]) 
                 $service_path = '\\App\\Services\\'.ucfirst($task->job->name).'ParsingPattern';
+
                 $method_exists=method_exists($service_path,'generateProperMapResult');
                 foreach($results as $key=>$value){
-                    if($method_exists){
-                        $temp_result=app($service_path)->generateProperMapResult($key,$value);
-                        $key=$temp_result['key'];
-                        $value=$temp_result['value'];
+                    // if($method_exists){
+                    //     $temp_result=app($service_path)->generateProperMapResult($key,$value);
+                    //     $key=$temp_result['key'];
+                    //     $value=$temp_result['value'];
+                    // }
+                    if(is_array($value)){
+                        $key = $value[0];
+                        $value = $value[1];
                     }
-
-                    $partition=$this->getHash($key,4);
+                    // $partition=$this->getHash($key,4);
+                    
                     $data=json_encode(['key'=>$key,'value'=>$value]);
-                    $this->produce($data,$partition);
-                    // dd($data,$partition);
+                    $this->produce($data,null,$key);
+                
                 }
+                
                 Redis::hDel('pendingMapData_'.$request->job_id, $request->data['index']);
                 // $count=Cache::get('MapDataCount_'.$request->job_id);
                 // Cache::put('MapDataCount_'.$request->job_id,$count-1,60000);

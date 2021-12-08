@@ -71,7 +71,7 @@ import axios from "axios";
                 this.workingStatus = false;
             },
             startSocketConnection() {
-                // this.socket = io.connect("http://192.168.1.105:400", {
+                // this.socket = io.connect("http://192.168.1.117:400", {
                     this.socket = io.connect("localhost:400", {
                     transports: ["websocket"],
                 });

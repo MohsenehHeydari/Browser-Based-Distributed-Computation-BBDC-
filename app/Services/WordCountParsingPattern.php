@@ -14,6 +14,8 @@ class WordCountParsingPattern {
     private $reduce_partition_count=4;
     
     public function createFiles($request, $ownerJob){
+        $page = '';
+        $line_count = 400; 
         //get file content
         // decomposition pattern for wordCount
         $contents = file_get_contents($request->file('data_file')->getRealPath());
@@ -26,18 +28,27 @@ class WordCountParsingPattern {
                 $value = trim($value);
                 return strlen($value) > 0;
             });
-             $index = 1;
-            foreach ($lines as $line) {
+            $page_number = 0;
+            $counter = 1;
+            $file_line_count = count($lines);
+            foreach ($lines as $index=>$line) {
                 // $line=str_replace(['{','}',',',';','[',']','?',':','.','$','_','-','(',')','"',"'",'/'],' ',$line);
                 // $line = preg_replace('/([~!@#$%^&*()_+=`{}\[\]\|\\\:;\'<>",.\/? -])+/i'," ",$line);
                 // $line= trim($line);
                 //store lines to file
-                $url = 'data/' . $request->input('name') . $ownerJob->id . '/' . $index . '.txt';
-                Storage::disk('public')->put($url, $line);
-
-                $index++;
+                $page .= $line."\n";
+                if($counter > $line_count || $index == $file_line_count-1){
+                    $url = 'data/' . $request->input('name') . $ownerJob->id . '/' . $page_number . '.txt';
+                    Storage::disk('public')->put($url, $page);
+                    $page_number++;
+                    $counter = 1;
+                    $page = '';
+                }else{
+                    $counter++;
+                } 
+                
             }
-            return $index;
+            return $page_number;
         }
         elseif($request->data_type === 'link_file'){
             $lines = array_filter($lines, function ($value) {

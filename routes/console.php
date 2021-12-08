@@ -75,28 +75,28 @@ Artisan::command('testConsumer', function () {
                 switch ($message->err) {
                     case RD_KAFKA_RESP_ERR_NO_ERROR:
                         // var_dump($message);
-                        $objectMessage = json_decode($message->payload);
-                        $this->comment('message is:'.$message->payload.'-time is:'.$before_consume->floatDiffInSeconds(Carbon::now()));
+                        // $objectMessage = json_decode($message->payload);
+                        // $this->comment('message is:'.$message->payload.'-time is:'.$before_consume->floatDiffInSeconds(Carbon::now()));
                         //check if the partition is empty and this message is first one
-                        if(count($result) == 0){
-                            $result[$objectMessage->key]['value'] = [$objectMessage->value];
-                            $result[$objectMessage->key]['status'] = 'pending';
-                        }else {
-                            if(isset($result[$objectMessage->key])){
-                                $result[$objectMessage->key]['value'][] = $objectMessage->value; 
-                            }
-                            else{
-                                $result[$objectMessage->key]['value'] = [$objectMessage->value];
-                                $result[$objectMessage->key]['status'] = 'init';
-                            }
-                        }
+                        // if(count($result) == 0){
+                        //     $result[$objectMessage->key]['value'] = [$objectMessage->value];
+                        //     $result[$objectMessage->key]['status'] = 'pending';
+                        // }else {
+                        //     if(isset($result[$objectMessage->key])){
+                        //         $result[$objectMessage->key]['value'][] = $objectMessage->value; 
+                        //     }
+                        //     else{
+                        //         $result[$objectMessage->key]['value'] = [$objectMessage->value];
+                        //         $result[$objectMessage->key]['status'] = 'init';
+                        //     }
+                        // }
                         // Cache::tags('reduceData')->put($objectMessage->key, $result[$objectMessage->key]['value'], 120);
-                        if($result[$objectMessage->key]['status'] == 'pending'){
-                            Redis::hSet('pendingReduceData_'.$job_id, $objectMessage->key, json_encode($result[$objectMessage->key]['value']) );
-                        }
-                        else{
-                            Redis::hSet('initReduceData_'.$job_id, $objectMessage->key, json_encode($result[$objectMessage->key]['value']) );
-                        }
+                        // if($result[$objectMessage->key]['status'] == 'pending'){
+                        //     Redis::hSet('pendingReduceData_'.$job_id, $objectMessage->key, json_encode($result[$objectMessage->key]['value']) );
+                        // }
+                        // else{
+                        //     Redis::hSet('initReduceData_'.$job_id, $objectMessage->key, json_encode($result[$objectMessage->key]['value']) );
+                        // }
                         break;
                     case RD_KAFKA_RESP_ERR__PARTITION_EOF:
                         $this->comment("No more messages; will wait for more");
@@ -191,6 +191,7 @@ Artisan::command('testSingleConsumer', function () {
                         $objectMessage = json_decode($message->payload);
                         $this->comment('message is:'.$message->payload.'-time is:'.$first_of_consume->floatDiffInSeconds(Carbon::now()));
                         $this->comment('offset is:'.$message->offset);
+                        // $this->comment('partition is:'.$partition);
                         Cache::put('last_offset',$message->offset+1,60000);
                         return;
                         break;
@@ -239,6 +240,12 @@ Artisan::command('testProducer', function () {
         
         $conf = new \RdKafka\Conf();
         $conf->set('metadata.broker.list', 'localhost:9092');
+        $conf->set('partitioner','consistent');
+        $conf->set('batch.size',1000000);
+        // $conf->set('batch.num.messages',100);
+        // $conf->set('message.max.bytes',);
+        // $conf->set('linger.ms',);
+
 
         //If you need to produce exactly once and want to keep the original produce order, uncomment the line below
         //$conf->set('enable.idempotence', 'true');
@@ -249,17 +256,23 @@ Artisan::command('testProducer', function () {
         // produce 10 messages
         for ($i = 0; $i < 10; $i++) {
 
-            $key='text-'.$i;
+            $key='text-'.random_int(1,9);
             $value=random_int(1,10);
             // partitioning: by using getHash function messages with same key will go to one partiotion
-            $partition=getHash($key,4);
-            $message =  json_encode(['key'=>$key,'value'=>$value]);
-            // produce(partiotion,0/RD_KAFKA_MSG_F_BLOCK,message payload)
-            //RD_KAFKA_PARTITION_UA = unassigned partition
+            // $partition=getHash($key,4);
+            $message_payload = json_encode(['key'=>$key,'value'=>$value]);
+            // produce(partition,0/RD_KAFKA_MSG_F_BLOCK,message payload)
+            //RD_KAFKA_PARTITION_UA = unassigned partition = use configured or default partitioner 
             //RD_KAFKA_MSG_F_BLOCK = block produce on full queue
-            $topic->produce($partition, 0, $message); 
+            // $topic->produce($partition, 0, $message); 
+            // $start_produce = Carbon::now();
+            $topic->produce(RD_KAFKA_PARTITION_UA, 0, $message_payload, $key); 
+            // $end_produce = $start_produce->floatDiffInSeconds(Carbon::now());
             $producer->poll(0);
-            $this->comment($message);
+            $this->comment($i+1);
+            $this->comment($message_payload);
+            // $this->comment($end_produce);
+            // $this->comment($collection->key());
         }
 
         for ($flushRetries = 0; $flushRetries < 10; $flushRetries++) {

@@ -51,5 +51,5 @@ function symmetric(N=5){
 }
 console.time('create symmetric matrix');
 // console.table(symmetric(20));
-symmetric(20)
+symmetric(500)
 console.timeEnd('create symmetric matrix');
