@@ -89,12 +89,14 @@ class TestController extends Controller
 
             $this->initConnector('consume', $job->name.'-map');
             $this->cousumeAllMessage(0);
-            $owner_job = OwnerJob::where('job_id',$job->id)->first();
-            if($owner_job){
-                $owner_job->status = 'init';
-                $owner_job->process_log = '';
-                $owner_job->save();
-            }
+            // $owner_jobs = OwnerJob::where('job_id',$job->id)->get();
+            // foreach($owner_jobs as $owner_job){
+            //     if($owner_job){
+            //         $owner_job->status = 'init';
+            //         $owner_job->process_log = '';
+            //         $owner_job->save();
+            //     }
+            // }
 
             $logs=ProcessLog::get()->pluck('id')->toArray();
             ProcessLog::destroy($logs);
@@ -103,6 +105,11 @@ class TestController extends Controller
 
         $owner_jobs = OwnerJob::get();
         foreach($owner_jobs as $owner_job){
+            if($owner_job){
+                $owner_job->status = 'init';
+                $owner_job->process_log = '';
+                $owner_job->save();
+            }
             Cache::forget('logStatus-'.$owner_job->id);
         }
         
@@ -331,36 +338,33 @@ class TestController extends Controller
     
     public function testProducer()
     {
-        $conf = new \RdKafka\Conf();
-        $conf->set('metadata.broker.list', 'localhost:9092');
-
-        //If you need to produce exactly once and want to keep the original produce order, uncomment the line below
-        //$conf->set('enable.idempotence', 'true');
-
-        $producer = new \RdKafka\Producer($conf);
-
-        $topic = $producer->newTopic("test");
-
-        for ($i = 0; $i < 10; $i++) {
+        $topic = 'test';        
+        $this->initConnector('produce',$topic);
+        $start_produce = Carbon::now();
+        for ($i = 0; $i < 2000000; $i++) {
 
             $key = 'text-' . random_int(1, 5);
             $value = random_int(1, 2);
-            $partition = $this->getHash($key, 3);
+            $data=json_encode(['key'=>$key,'value'=>$value]);
+            $partition=null;
 
-            $topic->produce($partition, 0, json_encode(['key' => $key, 'value' => $value]));
-            $producer->poll(0);
+            //  $partition=$this->getHash($key,4);
+            //  $key=null;
+
+            $this->produce($data,$partition,$key);
         }
-
+        
         for ($flushRetries = 0; $flushRetries < 10; $flushRetries++) {
-            $result = $producer->flush(10000);
+            $result = $this->producer->flush(10000);
             if (RD_KAFKA_RESP_ERR_NO_ERROR === $result) {
                 break;
             }
         }
-
+        $end_produce = $start_produce->floatDiffInSeconds(Carbon::now());
         if (RD_KAFKA_RESP_ERR_NO_ERROR !== $result) {
             throw new \RuntimeException('Was unable to flush, messages might be lost!');
         }
+        dd($end_produce);
     }
 
     public function testConsumer()

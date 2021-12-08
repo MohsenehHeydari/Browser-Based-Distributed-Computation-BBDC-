@@ -20,6 +20,7 @@ trait KafkaConnect
         //$conf->set('enable.idempotence', 'true');
 
         if($type === 'produce'){
+            $conf->set('partitioner','consistent');
             $this->producer = new \RdKafka\Producer($conf);
             $this->topic = $this->producer->newTopic($topic);
         }else if($type === 'consume'){
@@ -38,11 +39,14 @@ trait KafkaConnect
         }
         
     }
-    public function produce($message,$partition=0){
+    public function produce($message,$partition=0,$key=null){
+        if($partition == null){
+            $partition = RD_KAFKA_PARTITION_UA;
+        }
         if(is_array($message)){
             $message=json_encode($message);
         }
-        $this->topic->produce($partition, 0, $message); 
+        $this->topic->produce($partition, 0, $message, $key); 
         $this->producer->poll(0);
         // $this->($message);
         
