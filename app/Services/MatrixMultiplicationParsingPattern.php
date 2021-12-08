@@ -124,7 +124,7 @@ class MatrixMultiplicationParsingPattern{
             $row_data="";
             foreach($row as $column_index=>$column){
                 $string_data = 'A,'.($row_index +1).','.($column_index+1);
-                $string_data .=','.$first_matrix_row_count.':'.$column;
+                $string_data .=','.$second_matrix_column_count.':'.$column;
                 if($first_matrix_column_count>$column_index+1){
                     $string_data.="\n";
                 }
@@ -162,7 +162,7 @@ class MatrixMultiplicationParsingPattern{
             $row_data="";
             foreach($row as $column_index=>$column){
                 $string_data = 'B,'.($row_index +1).','.($column_index+1);
-                $string_data .=','.$second_matrix_column_count.':'.$column;
+                $string_data .=','.$first_matrix_row_count.':'.$column;
                 if($second_matrix_column_count>$column_index+1){
                     $string_data.="\n";
                 }
