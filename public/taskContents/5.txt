@@ -1,4 +1,4 @@
-console.log(data,'data');
+
 data=data.split('-');
 
     let min=+data[0];
@@ -6,7 +6,7 @@ data=data.split('-');
     let N=+data[2];
    
     let KnownPrimes = [2,3,5,7];
-    let result =[];
+    let result ="";
     for(min; min<=max; min++){
         result.push([min,1]);
         if(KnownPrimes.includes(min) || isNotDividable(min,KnownPrimes)){
@@ -16,7 +16,8 @@ data=data.split('-');
                 if(Number.isInteger(f)){
                     let k = min*f;
                     if(k <= N && k!= min){
-                        result.push([k,1]);
+                        //result.push([k,1]);
+                        result+=k+'|'+1+'&';
                     }
                 }                
                 

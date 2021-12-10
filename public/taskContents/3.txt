@@ -1,4 +1,4 @@
-        let result=[]
+        let result=''
         data=data.replace(/\s/g, "x");
         let columnData=data.split('x');
         columnData.forEach(cellData=>{
@@ -15,7 +15,7 @@
                           key=i+','+columnNumber;
                           value=rowNumber+':'+ element;
                       }
-                      result.push([key,value]);
+                      result+=key+'|'+value+'&';
             }
         });
          return result;

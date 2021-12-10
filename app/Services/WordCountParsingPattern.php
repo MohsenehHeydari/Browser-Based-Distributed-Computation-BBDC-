@@ -109,6 +109,7 @@ class WordCountParsingPattern {
                 foreach($all_result as $index=>$result){
                     $key=$result['key'];
                     $value=$result['value'];
+
                     if(!isset($reduce_data[$key])){
                         $reduce_data[$key]=[
                             'key'=>$key,

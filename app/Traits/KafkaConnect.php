@@ -64,7 +64,6 @@ trait KafkaConnect
         $this->topic->consumeStart($partition,$last_offset);
         
         $message = $this->topic->consume($partition,1500);
-//        dd($message,$last_offset,$key_cache,$this->topic);
 
         if($message){
             switch ($message->err) {
@@ -89,7 +88,7 @@ trait KafkaConnect
         }
     }
 
-    public function cousumeAllMessage($partition){
+    public function cousumeAllMessage($partition,$return_result=true){
        
         $result = [];
        
@@ -104,8 +103,18 @@ trait KafkaConnect
             if($message){
                 switch ($message->err) {
                     case RD_KAFKA_RESP_ERR_NO_ERROR:
-                        $arrayMessage = json_decode($message->payload,true);
-                        $result[]=$arrayMessage;
+                        if($return_result){
+                            $data=explode('|',$message->payload);
+                            if(count($data) === 2){
+
+                                $arrayMessage= ['key'=>$data[0],'value'=>$data[1]];
+                            }
+                            else{
+                                $arrayMessage = json_decode($message->payload,true);
+                            }
+                            $result[]=$arrayMessage;
+                        }
+
                         break;
                     case RD_KAFKA_RESP_ERR__PARTITION_EOF:
                         throw new \Exception ("No more messages; will wait for more");

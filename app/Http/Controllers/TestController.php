@@ -82,13 +82,13 @@ class TestController extends Controller
             // Cache::forget($consume_count_key);
 
             $this->initConnector('consume', $job->name.'-reduce');
-            $this->cousumeAllMessage(0);
-            $this->cousumeAllMessage(1);
-            $this->cousumeAllMessage(2);
-            $this->cousumeAllMessage(3);
+            $this->cousumeAllMessage(0,false);
+            $this->cousumeAllMessage(1,false);
+            $this->cousumeAllMessage(2,false);
+            $this->cousumeAllMessage(3,false);
 
             $this->initConnector('consume', $job->name.'-map');
-            $this->cousumeAllMessage(0);
+            $this->cousumeAllMessage(0,false);
             // $owner_jobs = OwnerJob::where('job_id',$job->id)->get();
             // foreach($owner_jobs as $owner_job){
             //     if($owner_job){

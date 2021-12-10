@@ -14,7 +14,8 @@
                     }
                     let key = first+','+second;
 
-                    result[key] = userID;
+                    //result[key] = userID;
+                    result+=key+'|'+userID+'&';
                 }
             }
         }

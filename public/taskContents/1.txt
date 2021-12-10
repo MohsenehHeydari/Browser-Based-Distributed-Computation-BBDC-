@@ -1,9 +1,7 @@
 let result={}
+let output="";
 
     data.replace(/([~!@#$%^&*↵()_+=`{}\s\[\]\|\\:;'<>",.\/? ])+/g, '-').replace(/^(-)+|(-)+$/g,'').split('-').forEach( word => {
-    //word=word.replace(/\s/g, "");
-    //let words=word.split('x');
-    //words.forEach(word=>{
         if(word !== " " && word !== ""){
             if(result[word]){
                 result[word]=result[word]+1
@@ -11,7 +9,9 @@ let result={}
                 result[word]=1;
             }
         }
-    //});
-
     });
-return result;
+
+    Object.keys(result).forEach(key=>{
+       output+=key+'|'+result[key]+'&';
+    });
+return output;

@@ -47,6 +47,9 @@ Route::get('/panel/{type}', 'PanelController@index')->name('panel')->middleware(
 Route::group(['prefix' => 'worker', 'middleware' => 'auth'], function () {
     Route::get('/taskRequest/{id}', 'TaskController@getTask')->middleware('bandwidth_assessment')->name('getTask');
     Route::post('/sendResult', 'DataController@sendResult')->middleware('bandwidth_assessment')->name('sendResult');
+//    Route::post('/sendResult', function (){
+//        die('test route request');
+//    })->name('sendResult');
 
     // job group routes
     Route::group(['prefix' => 'jobs'], function () {

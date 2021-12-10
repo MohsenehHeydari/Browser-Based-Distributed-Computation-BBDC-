@@ -52,7 +52,7 @@
             ];
         
             if($task->type !== 'map'){
-                $rules['result.*']='required';
+//                $rules['result.*']='required';
                 $rules['result']='required';
             
             }
@@ -107,7 +107,8 @@
 
     protected function receiveMapResult($request,$task)
     {
-        $results = $request->result;
+
+        $results = explode('&',trim($request->result,'&'));
             
         if(count($results)>0){
             // check key exists in redis-> if not exist put it away
@@ -119,25 +120,35 @@
                 $this->initConnector('produce',$topic);
 
                 // check if recieved result is not proper (key,value) => we should generate a proper result
-                $service_path = '\\App\\Services\\'.ucfirst($task->job->name).'ParsingPattern';
+//                $setrvice_path = '\\App\\Services\\'.ucfirst($task->job->name).'ParsingPattern';
+//                $method_exists=method_exists($service_path,'generateProperMapResult');
+                try{
+                    foreach($results as $result){
 
-                $method_exists=method_exists($service_path,'generateProperMapResult');
-                foreach($results as $key=>$value){
-                    // if($method_exists){
-                    //     $temp_result=app($service_path)->generateProperMapResult($key,$value);
-                    //     $key=$temp_result['key'];
-                    //     $value=$temp_result['value'];
-                    // }
-                    if(is_array($value)){
-                        $key = $value[0];
-                        $value = $value[1];
+                        $data=explode('|',$result);
+                        if(count($data) == 2){
+                            $key = $data[0];
+                            $value = $data[1];
+                            $this->produce($result,null,$key);
+                        }
+
                     }
-                    // $partition=$this->getHash($key,4);
-                    
-                    $data=json_encode(['key'=>$key,'value'=>$value]);
-                    $this->produce($data,null,$key);
-                
+//                    for ($flushRetries = 0; $flushRetries < 10; $flushRetries++) {
+//                        $result = $this->producer->flush(10000);
+//                        if (RD_KAFKA_RESP_ERR_NO_ERROR === $result) {
+//                            break;
+//                        }
+//                        if (RD_KAFKA_RESP_ERR_NO_ERROR !== $result) {
+//                            throw new \RuntimeException('Was unable to flush, messages might be lost!');
+//                        }
+//                    }
+
+
                 }
+                catch (\Exception $exception){
+                    die('Error : '.$exception->getMessage()) ;
+                }
+//                die('test after produce');
                 
                 Redis::hDel('pendingMapData_'.$request->job_id, $request->data['index']);
                 // $count=Cache::get('MapDataCount_'.$request->job_id);
