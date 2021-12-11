@@ -348,8 +348,22 @@ trait DataTrait{
                 $pending_result=[];
                 $waiting_result=[];
                 foreach($all_result as $index=>$result){
-                    $key=$result['key'];
-                    $value=$result['value'];
+                    $data=explode('|',$result);
+                    if(count($data) === 2){
+                        $key=$data[0];
+                        $value=$data[1];
+                    }
+                    else{
+                        $arrayMessage = json_decode($result,true);
+                        if(isset($arrayMessage['key']) && isset($arrayMessage['value'])){
+                            $key=$arrayMessage['key'];
+                            $value=$arrayMessage['value'];
+                        }
+                        else{
+                            throw new \Exception('result is not valid!');
+                        }                            
+                    }
+                    
                     if($index == 0){
                         $pending_result['key']=$key;
                         $pending_result['value']=$value;
@@ -390,7 +404,7 @@ trait DataTrait{
     }
     
     //last step check pending data
-    public function getPendingData($owner_job,$pending_group=null,$currentConsumePartition=null){
+    public function getPendingData($owner_job,$pending_group=null,$currentConsumePartition=null,$string_result=null){
         
        
 
@@ -411,27 +425,30 @@ trait DataTrait{
 
                     try{
 
-                        $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
-                        if($total_result === null){
-                            
-                            $owner_job->status='done';
-                            $owner_job->save();
-                            return $this->getData($owner_job->job_id);
-                        }
-
-                        $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
-                        $format_method_exists = method_exists($service_path,'formatFinalResult');
-                        if($format_method_exists){
-                            $string_result = app($service_path)->formatFinalResult($total_result);
-                        }
-                        else{
-                            $result_collection=collect($total_result)->sortKeys();
-                            $string_result = '';
-                            foreach($result_collection as $key=>$value){
-                                $string_result .= $key. ' : ' .$value. "\n";
+                        if($string_result == null){
+                            $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
+                            if($total_result === null){
+                                
+                                $owner_job->status='done';
+                                $owner_job->save();
+                                return $this->getData($owner_job->job_id);
                             }
-                        }
 
+                            $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
+                            $format_method_exists = method_exists($service_path,'formatFinalResult');
+                            if($format_method_exists){
+                                $string_result = app($service_path)->formatFinalResult($total_result);
+                            }
+                            else{
+                                $result_collection=collect($total_result)->sortKeys();
+                                $string_result = '';
+                                foreach($result_collection as $key=>$value){
+                                    $string_result .= $key. ' : ' .$value. "\n";
+                                }
+                            }
+
+                        }
+                        
                         $final_result_path= 'results/'.$owner_job->job->name.'/'.$owner_job->name.'-'.$owner_job->id.'.txt'; //creating url 
                         Storage::disk('public')->put($final_result_path, $string_result);//store data in file
                         $owner_job->status='done';

@@ -1,23 +1,31 @@
 
-    let result = {};
-    let [userID,friends] = data.split(':');
-    friends = friends.split(',');
-    for(let i=0; i<friends.length; i++){
-        if(friends[i] != ''){
-            for(let j=0; j<friends.length; j++){
-                if(friends[j] != '' && i != j){
-                    let first = friends[i];
-                    let second = friends[j];
-                    if(first > second){
-                        first = friends[j];
-                        second = friends[i];
+   let result = '';
+        data=data.replace(/\s/g, "x");
+        let arrayResult=data.split('x');
+        arrayResult.forEach((line)=>{
+            if(line !== ''){
+                let tmp = line.split(':');
+                let userID = tmp[0];
+                let friends = tmp[1];
+                friends = friends.split(',');
+                for(let i=0; i<friends.length; i++){
+                    if(friends[i] != ''){
+                        for(let j=0; j<friends.length; j++){
+                            if(friends[j] != '' && i != j){
+                                let first = friends[i];
+                                let second = friends[j];
+                                if(first > second){
+                                    first = friends[j];
+                                    second = friends[i];
+                                }
+                                let key = first+','+second;
+                                result+=key+'|'+userID+'&';
+                            }
+                        }
                     }
-                    let key = first+','+second;
-
-                    //result[key] = userID;
-                    result+=key+'|'+userID+'&';
                 }
+        
             }
-        }
-    }
-    return result;
+        });
+        
+        return result;

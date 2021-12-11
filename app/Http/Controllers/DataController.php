@@ -128,20 +128,20 @@
                         $data=explode('|',$result);
                         if(count($data) == 2){
                             $key = $data[0];
-                            $value = $data[1];
+                            //$value = $data[1];
                             $this->produce($result,null,$key);
                         }
 
                     }
-//                    for ($flushRetries = 0; $flushRetries < 10; $flushRetries++) {
-//                        $result = $this->producer->flush(10000);
-//                        if (RD_KAFKA_RESP_ERR_NO_ERROR === $result) {
-//                            break;
-//                        }
-//                        if (RD_KAFKA_RESP_ERR_NO_ERROR !== $result) {
-//                            throw new \RuntimeException('Was unable to flush, messages might be lost!');
-//                        }
-//                    }
+                   for ($flushRetries = 0; $flushRetries < 10; $flushRetries++) {
+                       $result = $this->producer->flush(10000);
+                       if (RD_KAFKA_RESP_ERR_NO_ERROR === $result) {
+                           break;
+                       }
+                       if (RD_KAFKA_RESP_ERR_NO_ERROR !== $result) {
+                           throw new \RuntimeException('Was unable to flush, messages might be lost!');
+                       }
+                   }
 
 
                 }

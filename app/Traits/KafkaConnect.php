@@ -21,6 +21,7 @@ trait KafkaConnect
 
         if($type === 'produce'){
             $conf->set('partitioner','consistent');
+            $conf->set('queue.buffering.max.kbytes','10000000');
             $this->producer = new \RdKafka\Producer($conf);
             $this->topic = $this->producer->newTopic($topic);
         }else if($type === 'consume'){
@@ -104,15 +105,8 @@ trait KafkaConnect
                 switch ($message->err) {
                     case RD_KAFKA_RESP_ERR_NO_ERROR:
                         if($return_result){
-                            $data=explode('|',$message->payload);
-                            if(count($data) === 2){
-
-                                $arrayMessage= ['key'=>$data[0],'value'=>$data[1]];
-                            }
-                            else{
-                                $arrayMessage = json_decode($message->payload,true);
-                            }
-                            $result[]=$arrayMessage;
+                           
+                            $result[]=$message->payload;
                         }
 
                         break;
