@@ -62,29 +62,26 @@ class MutualFriendsParsingPattern {
             $result_data= [];
             $this->initConnector('consume',$topic);
             $all_result=$this->cousumeAllMessage($partition);
+
             foreach($all_result as $index=>$result){
                 $result=explode('|',$result);
                 $key = $result[0];
                 $value = $result[1];
-
                 if(!isset($result_data[$key])){
-                    $result_data[$key]=$value;
-                    $final_result .= "\n".$key.':'.$value;
+                    $result_data[$key][]=$value;
 
                 }
                 else{
-                    // $result_data[$key] .= ','.$value;
-                    $final_result .= ','.$value;
+                    if(!in_array($value,$result_data[$key])){
+                        $result_data[$key][]=$value;
+                    }
                 }
 
             }
-            
-            
-            // foreach($result_data as $key=>$value){
-            //     $final_result .= $key.':'.$value."\n";    
-            //     // Redis::hSet('resultReduce_'.$owner_job->job_id,$key,$value);
-        
-            // }
+
+            foreach ($result_data as $key=>$value){
+                $final_result.=$key.":".implode(',',$value)."\n";
+            }
         }
 
         return $this->getPendingData($owner_job,null,null,$final_result);
