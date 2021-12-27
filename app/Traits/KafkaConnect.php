@@ -15,6 +15,13 @@ trait KafkaConnect
          
         $conf = new \RdKafka\Conf();
         $conf->set('metadata.broker.list', $hosts);
+        $conf->set('socket.timeout.ms', 50); // or socket.blocking.max.ms, depending on librdkafka version
+//        if (function_exists('pcntl_sigprocmask')) {
+//            pcntl_sigprocmask(SIG_BLOCK, array(SIGIO));
+//            $conf->set('internal.termination.signal', SIGIO);
+//        } else {
+//            $conf->set('queue.buffering.max.ms', 1);
+//        }
 
         //If you need to produce exactly once and want to keep the original produce order, uncomment the line below
         //$conf->set('enable.idempotence', 'true');
@@ -22,6 +29,7 @@ trait KafkaConnect
         if($type === 'produce'){
             $conf->set('partitioner','consistent');
             $conf->set('queue.buffering.max.kbytes','10000000');
+            $conf->set('queue.buffering.max.messages','10000000');
             $this->producer = new \RdKafka\Producer($conf);
             $this->topic = $this->producer->newTopic($topic);
         }else if($type === 'consume'){
@@ -49,6 +57,7 @@ trait KafkaConnect
         }
         $this->topic->produce($partition, 0, $message, $key); 
         $this->producer->poll(0);
+
         // $this->($message);
         
     }

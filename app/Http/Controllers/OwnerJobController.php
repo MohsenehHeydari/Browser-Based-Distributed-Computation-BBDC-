@@ -92,31 +92,33 @@ class OwnerJobController extends Controller
 
     public function getBestDevice($owner_job)
     {
-        // $owner_job = OwnerJob::find(1);
+//        $owner_job = OwnerJob::findOrFail(39);
         // choose best device among online users which choose this job and are idle
         $online_users = json_decode(Redis::get('online_users'), true);
         if($online_users){
             $available_devices = [];
             foreach ($online_users as $online_user) {
-                if ($online_user['job_id'] == $owner_job->job_id && $online_user['working_status'] == false) {
+                if (intval($online_user['job_id']) == $owner_job->job_id && $online_user['working_status'] == false) {
                     $available_devices[] = $online_user['device_id'];
                 }
             }
             if(count($available_devices) > 0) {
                 $data = \DB::table('process_logs')
-                    ->join('devices', 'devices.id', '=', 'process_logs.device_id')
-                    ->whereIn('process_logs.device_id', $available_devices)
+//                    ->join('devices', 'devices.id', '=', 'process_logs.device_id')
+                    ->whereIn('device_id', $available_devices)
                     ->select([
                         \DB::raw('sum(result_count) as total_result_count'),
                         \DB::raw('AVG(success_percent) as avg_success_percent'),
-                        \DB::raw('AVG(avg_proccessing_duration) as avg_proccessing_duration'), //speed of doing task
+                        \DB::raw('AVG(avg_processing_duration) as avg_processing_duration'), //speed of doing task
                         'device_id',
-                        'devices.CPU',
-                        'devices.RAM',
-                        'devices.battery',
+//                        'devices.CPU',
+//                        'devices.RAM',
+//                        'devices.battery',
                     ])
-                    ->groupBy('device_id', 'devices.CPU', 'devices.RAM', 'devices.battery')
+//                    ->groupBy('device_id', 'devices.CPU', 'devices.RAM', 'devices.battery')
+                    ->groupBy('device_id')
                     ->get();
+
 
                 $max_result_count = 0; //for a device which has max result count
                 $min_result_count = 0; //always is zero
@@ -130,11 +132,11 @@ class OwnerJobController extends Controller
                     // if($d->total_result_count < $min_result_count || $min_result_count == null){
                     //     $min_result_count = $d->total_result_count;
                     // }
-                    if ($d->avg_proccessing_duration > $max_proccessing_duration) {
-                        $max_proccessing_duration = $d->avg_proccessing_duration;
+                    if ($d->avg_processing_duration > $max_proccessing_duration) {
+                        $max_proccessing_duration = $d->avg_processing_duration;
                     }
-                    if ($d->avg_proccessing_duration < $min_proccessing_duration || $min_proccessing_duration == null) {
-                        $min_proccessing_duration = $d->avg_proccessing_duration;
+                    if ($d->avg_processing_duration < $min_proccessing_duration || $min_proccessing_duration == null) {
+                        $min_proccessing_duration = $d->avg_processing_duration;
                     }
                 }
                 // defining a ceiling amount to rank slowest device fairly
@@ -145,22 +147,21 @@ class OwnerJobController extends Controller
                 foreach ($data as $index => $d) {
 
                     $rank = 0;
-                    $rank += (7 * $d->CPU) / 100; // cpu has 7 out of 100 score
-                    $rank += (7 * $d->RAM) / 100; // ram has 7/100 score
-                    $rank += (7 * $d->battery) / 100; // battery has 7/100 score
+//                    $rank += (7 * $d->CPU) / 100; // cpu has 7 out of 100 score
+//                    $rank += (7 * $d->RAM) / 100; // ram has 7/100 score
+//                    $rank += (7 * $d->battery) / 100; // battery has 7/100 score
                     $rank += (29 * $d->avg_success_percent) / 100; // success_percent has 29/100 score
 
                     // rank of result count =(current_device_result_count / max of result_count) * 25
                     $rank += ((($d->total_result_count)) / $max_result_count) * 25; // total result count has 25/100 score
 
                     // we reverse the current device processing duration
-                    $temp_current_proccessing_time = $ceiling - $d->avg_proccessing_duration;
+                    $temp_current_proccessing_time = $ceiling - $d->avg_processing_duration;
                     // rank of proccessing time=(current_proccessing_time / max of proccessing_time ) *25
                     $rank += ($temp_current_proccessing_time / $temp_max_proccessing_duration) * 25;
 
                     $data[$index]->rank = $rank;
                 }
-
                 $max_socket_count = 2;
                 $socket_index = 0;
                 $best_sockets = [];

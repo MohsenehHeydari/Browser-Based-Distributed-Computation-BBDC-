@@ -1,0 +1,57 @@
+return new Promise((resolve)=>{
+    data = data.replace(/\s/g, "||");
+    let arrayResult = data.split('||');
+    let [rowInfo, columnsUrl] = arrayResult;
+    //console.log(rowInfo, columnsUrl, 'result');
+
+    let secondMatrixData = localStorage.getItem(columnsUrl);
+     //console.log(secondMatrixData,'secondMatrixData');
+    if (secondMatrixData === null) {
+        axios.get(columnsUrl)
+            .then(response=>{
+
+                let secondMatrixData=response.data;
+                localStorage.setItem(columnsUrl, secondMatrixData);
+                resolve(getResult(rowInfo,secondMatrixData));
+            });
+    }else {
+        resolve(getResult(rowInfo,secondMatrixData));
+    }
+
+
+
+    function getResult(rowInfo,secondMatrixData) {
+        let result = "";
+        let [rowNumber, rowData] = rowInfo.split(':');
+
+
+        secondMatrixData = secondMatrixData.replace(/\s/g, "||");
+
+        secondMatrixData = secondMatrixData.split('||');
+        secondMatrixData.length=secondMatrixData.length-1;
+        rowData = rowData.split(',');
+
+        secondMatrixData.forEach(columnInfo => {
+        //console.log(typeof columnInfo,columnInfo);
+            let [columnNumber, columnData] = columnInfo.split(':');
+            columnData = columnData.split(',');
+
+            if(rowData.length !== columnData.length){
+                throw  new Error('data is not valid!');
+            }
+
+            let key=rowNumber+'-'+columnNumber;
+            let value=0;
+
+            for (let i = 1; i < rowData.length; i++) {
+                value+=(rowData[i]*columnData[i])
+            }
+
+            result+=key+":"+value+"\n";
+
+        });
+        return result;
+    }
+});
+
+

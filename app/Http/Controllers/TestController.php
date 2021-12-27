@@ -81,11 +81,15 @@ class TestController extends Controller
             // $consume_count_key =  $topic.'-consume-count';
             // Cache::forget($consume_count_key);
 
+            $partitions_count=4;
+//            if($job->name === 'matrixMultiplication'){
+//                $partitions_count=100;
+//            }
             $this->initConnector('consume', $job->name.'-reduce');
-            $this->cousumeAllMessage(0,false);
-            $this->cousumeAllMessage(1,false);
-            $this->cousumeAllMessage(2,false);
-            $this->cousumeAllMessage(3,false);
+            for ($i=0;$i<$partitions_count;$i++){
+                $this->cousumeAllMessage($i,false);
+            }
+
 
             $this->initConnector('consume', $job->name.'-map');
             $this->cousumeAllMessage(0,false);
@@ -126,122 +130,123 @@ class TestController extends Controller
     }
 
 
-    public function getBestDevice(){
-        $owner_job = OwnerJob::find(1);
+    public function getBestDevice()
+    {
+         $owner_job = OwnerJob::findOrFail(39);
         // choose best device among online users which choose this job and are idle
-        $online_users = json_decode(Redis::get('online_users'),true);
-        $available_devices = [];
-        foreach($online_users as $online_user){
-            if($online_user['job_id'] == $owner_job->job_id && $online_user['working_status'] == false){
-                $available_devices[] = $online_user['device_id'];
+        $online_users = json_decode(Redis::get('online_users'), true);
+        if($online_users){
+            $available_devices = [];
+            foreach ($online_users as $online_user) {
+                if (intval($online_user['job_id']) == $owner_job->job_id && $online_user['working_status'] == false) {
+                    $available_devices[] = $online_user['device_id'];
+                }
             }
-        }
-        if(count($available_devices) > 0){
-             $data = \DB::table('process_logs')
-            ->join('devices','devices.id', '=', 'process_logs.device_id')
-            ->whereIn('process_logs.device_id',$available_devices)
-            ->select([
-                \DB::raw('sum(result_count) as total_result_count'), 
-                \DB::raw('AVG(success_percent) as avg_success_percent'),
-                \DB::raw('AVG(avg_proccessing_duration) as avg_proccessing_duration'),//speed of doing task
-                'device_id',
-                'devices.CPU',
-                'devices.RAM',
-                'devices.battery',
-            ])
-            ->groupBy('device_id','devices.CPU','devices.RAM', 'devices.battery')
-            ->get();
+            if(count($available_devices) > 0) {
+                $data = \DB::table('process_logs')
+//                    ->join('devices', 'devices.id', '=', 'process_logs.device_id')
+                    ->whereIn('device_id', $available_devices)
+                    ->select([
+                        \DB::raw('sum(result_count) as total_result_count'),
+                        \DB::raw('AVG(success_percent) as avg_success_percent'),
+                        \DB::raw('AVG(avg_processing_duration) as avg_processing_duration'), //speed of doing task
+                        'device_id',
+//                        'devices.CPU',
+//                        'devices.RAM',
+//                        'devices.battery',
+                    ])
+//                    ->groupBy('device_id', 'devices.CPU', 'devices.RAM', 'devices.battery')
+                    ->groupBy('device_id')
+                    ->get();
 
-            $max_result_count = 0;//for a device which has max result count
-            $min_result_count = 0;//always is zero
-            $max_proccessing_duration = 0;//for a device which are slowest
-            $min_proccessing_duration = null;
-        
-            foreach($data as $index=>$d){
-                if($d->total_result_count > $max_result_count){
-                    $max_result_count = $d->total_result_count;
-                }
-                // if($d->total_result_count < $min_result_count || $min_result_count == null){
-                //     $min_result_count = $d->total_result_count;
-                // }
-                if($d->avg_proccessing_duration > $max_proccessing_duration){
-                    $max_proccessing_duration = $d->avg_proccessing_duration;
-                }
-                if($d->avg_proccessing_duration < $min_proccessing_duration || $min_proccessing_duration == null){
-                    $min_proccessing_duration = $d->avg_proccessing_duration;
-                }
-            }
-            // defining a ceiling amount to rank slowest device fairly
-            $ceiling = $max_proccessing_duration + ($max_proccessing_duration * 10)/100; // ceiling = max + 10%
-            //max_processing_duration time has min rank so we reverse the range 
-            $temp_max_proccessing_duration = $ceiling - $min_proccessing_duration;
-            
-            $best_device_rank = 0;
-            $best_device = null;
-            $sort_devices = [];
-            $devices_ranks_array =[]; 
 
-            foreach($data as $index=>$d){
-                
-                $rank = 0;
-                $rank += (7*$d->CPU)/100; // cpu has 7 out of 100 score
-                $rank += (7*$d->RAM)/100; // ram has 7/100 score
-                $rank += (7*$d->battery)/100;// battery has 7/100 score
-                $rank += (29*$d->avg_success_percent)/100; // success_percent has 29/100 score
-                
-                // rank of result count =(current_device_result_count / max of result_count) * 25
-                $rank += ((($d->total_result_count) )/$max_result_count )*25;// total result count has 25/100 score 
+                $max_result_count = 0; //for a device which has max result count
+                $min_result_count = 0; //always is zero
+                $max_proccessing_duration = 0; //for a device which are slowest
+                $min_proccessing_duration = null;
 
-                // we reverse the current device processing duration
-                $temp_current_proccessing_time = $ceiling - $d->avg_proccessing_duration;
-                dd($ceiling,$d->avg_proccessing_duration);
-                // rank of proccessing time=(current_proccessing_time / max of proccessing_time ) *25
-                $rank += ($temp_current_proccessing_time/ $temp_max_proccessing_duration)*25;
-                
-                if($rank > $best_device_rank){
-                    $best_device_rank = $rank;
-                    $best_device = $d;
-                    
+                foreach ($data as $index => $d) {
+                    if ($d->total_result_count > $max_result_count) {
+                        $max_result_count = $d->total_result_count;
+                    }
+                    // if($d->total_result_count < $min_result_count || $min_result_count == null){
+                    //     $min_result_count = $d->total_result_count;
+                    // }
+                    if ($d->avg_processing_duration > $max_proccessing_duration) {
+                        $max_proccessing_duration = $d->avg_processing_duration;
+                    }
+                    if ($d->avg_processing_duration < $min_proccessing_duration || $min_proccessing_duration == null) {
+                        $min_proccessing_duration = $d->avg_processing_duration;
+                    }
                 }
-               
-                $data[$index]->rank = $rank;   
-                
-            }
-            // if there is no device with history of doing this job and it is the first time to do this job
-            if($best_device == null){
-                $best_device_id = $available_devices[0];// always return first device?!!
-            }
-            
-            $data = collect($data)->sortByDesc('rank');
-           
-            $max_socket_count = 3;
-            $socket_index = 0;
-            $grouped_online_users = collect($online_users)->groupBy('device_id');
-            // check if there is one device with multi socket connection(maybe it opens more than one tab in browser)
-            foreach($data as $d){ //data is sorted base on rank
-                $online_user = $grouped_online_users[$d->device_id]; //online_user = items of data(best devices)
-                if($socket_index < $max_socket_count){
-                    foreach($online_user as $user){
-                        if($socket_index < $max_socket_count){
-                            $best_sockets[] = $user['socket_id'];
-                            $socket_index++;
-                        }
-                        else{
+                // defining a ceiling amount to rank slowest device fairly
+                $ceiling = $max_proccessing_duration + ($max_proccessing_duration * 10) / 100; // ceiling = max + 10%
+                //max_processing_duration time has min rank so we reverse the range
+                $temp_max_proccessing_duration = $ceiling - $min_proccessing_duration;
+
+                foreach ($data as $index => $d) {
+
+                    $rank = 0;
+//                    $rank += (7 * $d->CPU) / 100; // cpu has 7 out of 100 score
+//                    $rank += (7 * $d->RAM) / 100; // ram has 7/100 score
+//                    $rank += (7 * $d->battery) / 100; // battery has 7/100 score
+                    $rank += (29 * $d->avg_success_percent) / 100; // success_percent has 29/100 score
+
+                    // rank of result count =(current_device_result_count / max of result_count) * 25
+                    $rank += ((($d->total_result_count)) / $max_result_count) * 25; // total result count has 25/100 score
+
+                    // we reverse the current device processing duration
+                    $temp_current_proccessing_time = $ceiling - $d->avg_processing_duration;
+                    // rank of proccessing time=(current_proccessing_time / max of proccessing_time ) *25
+                    $rank += ($temp_current_proccessing_time / $temp_max_proccessing_duration) * 25;
+
+                    $data[$index]->rank = $rank;
+                }
+                $max_socket_count = 2;
+                $socket_index = 0;
+                $best_sockets = [];
+                // if there is no device with history of doing this job and it is the first time to do this job
+                if (count($data) > 0) {
+                    $data = collect($data)->sortByDesc('rank');
+                    $grouped_online_users = collect($online_users)->groupBy('device_id');
+                    // check if there is one device with multi socket connection(maybe it opens more than one tab in browser)
+                    foreach ($data as $d) { //data is sorted base on rank
+                        $online_user = $grouped_online_users[$d->device_id]; //online_user = items of data(best devices)
+                        if ($socket_index < $max_socket_count) {
+                            foreach ($online_user as $user) {
+                                if ($socket_index < $max_socket_count) {
+                                    $best_sockets[] = $user['socket_id'];
+                                    $socket_index++;
+                                }else{
+                                    break;
+                                }
+                            }
+                        }else{
                             break;
                         }
                     }
                 }
-                else{
-                    break;
+                if(count($best_sockets) < $max_socket_count){
+                    foreach($online_users as $online_user){
+                        if ($socket_index < $max_socket_count) {
+                            if(!in_array($online_user['socket_id'],$best_sockets)){//check duplications of socket id
+                                $best_sockets[] = $online_user['socket_id'];
+                                $socket_index++;
+                            }
+                        }else{
+                            break;
+                        }
+                    }
                 }
+            }else{
+                $best_sockets = [];
             }
-                
+
+            return $best_sockets;
         }
-        else{
-            $best_sockets= [];
-        }
-        
-        dd($grouped_online_users,$data,$best_sockets);
+
+        return [];
+
     }
 
     public function rankingTest()
@@ -261,7 +266,7 @@ class TestController extends Controller
                 ->select([
                     \DB::raw('sum(result_count) as total_result_count'), //depends on min and max
                     \DB::raw('AVG(success_percent) as avg_success_percent'),
-                    \DB::raw('AVG(avg_proccessing_duration) as avg_proccessing_duration'), //depends on min and max
+                    \DB::raw('AVG(avg_processing_duration) as avg_processing_duration'), //depends on min and max
                     'device_id',
                     'devices.CPU',
                     'devices.RAM',
@@ -282,11 +287,11 @@ class TestController extends Controller
                 // if($d->total_result_count < $min_result_count || $min_result_count == null){
                 //     $min_result_count = $d->total_result_count;
                 // }
-                if ($d->avg_proccessing_duration > $max_proccessing_duration) {
-                    $max_proccessing_duration = $d->avg_proccessing_duration;
+                if ($d->avg_processing_duration > $max_proccessing_duration) {
+                    $max_proccessing_duration = $d->avg_processing_duration;
                 }
-                if ($d->avg_proccessing_duration < $min_proccessing_duration || $min_proccessing_duration == null) {
-                    $min_proccessing_duration = $d->avg_proccessing_duration;
+                if ($d->avg_processing_duration < $min_proccessing_duration || $min_proccessing_duration == null) {
+                    $min_proccessing_duration = $d->avg_processing_duration;
                 }
             }
 
@@ -307,7 +312,7 @@ class TestController extends Controller
                 $rank += ((($d->total_result_count)) / $max_result_count) * 25;
 
                 // rank of proccessing time=(current_proccessing_time / max of proccessing_time of all devices) *25
-                $temp_current_proccessing_time = $ceiling - $d->avg_proccessing_duration;
+                $temp_current_proccessing_time = $ceiling - $d->avg_processing_duration;
                 $rank += ($temp_current_proccessing_time / $temp_max_proccessing_duration) * 25;
 
                 if ($rank > $best_device_rank) {

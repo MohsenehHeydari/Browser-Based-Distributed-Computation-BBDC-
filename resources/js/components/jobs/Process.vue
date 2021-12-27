@@ -199,37 +199,42 @@ import axios from "axios";
                     return response.data;
                 }
             },
-            doTask() {
+            async doTask() {
                 this.workingStatus = true;
+                let vm=this;
                 // create a function using 'data' as input name and currentTaskFile as funcion body
-                let task = new Function("data", this.currentTaskFile); 
-                let result = task(this.currentDataFile);
-                console.log(result);
-                axios
-                    .post("/worker/sendResult", {
-                    result: result,
-                    data: this.currentData,
-                    job_id: this.$route.params.id,
-                    })
-                    .then((response) => {
-                    // console.log("hasNewtTask ", response.data.hasNewTask);
-                    if (response.data.hasNewTask === 1 && this.stopComputationStatus !== true) {
-                        this.setTaskAndData(response.data.nextData);
-                        // this.workingStatus = false;
-                    } else {
-                        console.log("process is finished!", response.data);
-                        this.workingStatus = false;
-                    }
-                    })
-                    .catch((error)=>{
+                let task = new Function("data", this.currentTaskFile);
+                task(this.currentDataFile)
+                    .then(result=>{
+                        console.log(result);
+                        axios
+                            .post("/worker/sendResult", {
+                                result: result,
+                                data: this.currentData,
+                                job_id: this.$route.params.id,
+                            })
+                            .then((response) => {
+                                // console.log("hasNewtTask ", response.data.hasNewTask);
+                                if (response.data.hasNewTask === 1 && this.stopComputationStatus !== true) {
+                                    this.setTaskAndData(response.data.nextData);
+                                    // this.workingStatus = false;
+                                } else {
+                                    console.log("process is finished!", response.data);
+                                    this.workingStatus = false;
+                                }
+                            })
+                            .catch((error)=>{
 
-                        this.failedCount++;
-                        
-                        if(this.failedCount <= 20){
-                            this.setTaskAndData();
-                        }
-                    }
-                    );    
+                                    this.failedCount++;
+
+                                    if(this.failedCount <= 20){
+                                        this.setTaskAndData();
+                                    }
+                                }
+                            );
+                    });
+
+
             },
         },
         mounted(){

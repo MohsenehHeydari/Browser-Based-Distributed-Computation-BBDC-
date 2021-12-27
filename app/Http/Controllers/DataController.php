@@ -60,14 +60,26 @@
             $this->validate($request,$rules);
 
             // request = result+data+job_id
-       
-        
+
+
+            $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
             if($task->type === 'map'){
-                $this-> receiveMapResult($request,$task);
+                if(method_exists($service_path,'receiveMapResult')){
+                    app($service_path)->receiveMapResult($request,$task);
+                }
+                else{
+                    $this-> receiveMapResult($request,$task);
+                }
+
             
             }else if($task->type === 'reduce'){
                 // store result in file
-                $this-> receiveReduceResult($request,$task);
+                if(method_exists($service_path,'receiveReduceResult')){
+                    app($service_path)->receiveReduceResult($request,$task);
+                }
+                else{
+                    $this-> receiveReduceResult($request,$task);
+                }
             }else {
                 throw new \Exception('task type is not valid! type: '.$task->type);
             }
@@ -76,7 +88,6 @@
         if(!$device_id){
             throw new \Exception ('device id is not valid!');
         }
-        $owner_job_id = $request->data['owner_job_id'];
         $key = \Auth::user()->id.'-'.$device_id; //worker_id-device_id
         // time of recieving result
         $current_time = strtotime('now');
@@ -133,6 +144,9 @@
                         }
 
                     }
+//                    while ($this->producer->getOutQLen() > 0) {
+//                        $this->producer->poll(1);
+//                    }
                    for ($flushRetries = 0; $flushRetries < 10; $flushRetries++) {
                        $result = $this->producer->flush(10000);
                        if (RD_KAFKA_RESP_ERR_NO_ERROR === $result) {
@@ -146,6 +160,8 @@
 
                 }
                 catch (\Exception $exception){
+//                    throw $exception;
+//                    dd($exception);
                     die('Error : '.$exception->getMessage()) ;
                 }
 //                die('test after produce');

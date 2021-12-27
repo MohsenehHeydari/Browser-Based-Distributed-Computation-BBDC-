@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Traits;
+
 use Carbon\Carbon;
 
 use \App\Models\OwnerJob;
@@ -13,10 +14,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 
-trait DataTrait{
+trait DataTrait
+{
     use KafkaConnect;
 
-    private $reduce_partition_count=4;
+    private $reduce_partition_count = 4;
 
     // public function getData($job_id){
 
@@ -45,39 +47,37 @@ trait DataTrait{
         //3. if status = init produce data url to map topic and first data to redis and client
         //4. else if status = mapping consume data from kafka and in last data check redis to get data
         //5. else if status = reducing check redis first then consume data from reduce topic
-        $owner_job = OwnerJob::where('job_id',$job_id)
-        // prioritize owner job with expire date and id
-        ->with('job')
-        ->orderBy('expire_date', 'asc')
-        ->whereIn('status',['init','mapping','reducing'])
-        ->orderBy('id', 'asc')->first();
+        $owner_job = OwnerJob::where('job_id', $job_id)
+            // prioritize owner job with expire date and id
+            ->with('job')
+            ->orderBy('expire_date', 'asc')
+            ->whereIn('status', ['init', 'mapping', 'reducing'])
+            ->orderBy('id', 'asc')->first();
 
         $data = null;
         // dd($owner_job);
-        if($owner_job){
-            $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
-           
+        if ($owner_job) {
+            $service_path = '\\App\\Services\\' . ucfirst($owner_job->job->name) . 'ParsingPattern';
 
-            switch ($owner_job->status){
-                case 'init': 
-                    $init_method_exists = method_exists($service_path,'getInitData');
-                    if($init_method_exists){
+
+            switch ($owner_job->status) {
+                case 'init':
+                    $init_method_exists = method_exists($service_path, 'getInitData');
+                    if ($init_method_exists) {
                         $data = app($service_path)->getInitData($owner_job);
-                    }
-                    else{
-                        $data =  $this->getInitData($owner_job);
+                    } else {
+                        $data = $this->getInitData($owner_job);
                     }
                     break;
-                case 'mapping': 
+                case 'mapping':
                     $data = $this->getMappingData($owner_job);
                     // dd($data);
                     break;
                 case 'reducing':
-                    $reduce_method_exists=method_exists($service_path,'getReducingData');
-                    if($reduce_method_exists){
+                    $reduce_method_exists = method_exists($service_path, 'getReducingData');
+                    if ($reduce_method_exists) {
                         $data = app($service_path)->getReducingData($owner_job);
-                    }
-                    else{
+                    } else {
                         $data = $this->getReducingData($owner_job);
                     }
                     break;
@@ -88,57 +88,56 @@ trait DataTrait{
                     break;
 
             }
-            
+
             // save sent task count and time (base on second)->key= worker_id-device_id 
-            $sentTaskInfo = 'sentTaskInfo-'.$owner_job->job_id;
+            $sentTaskInfo = 'sentTaskInfo-' . $owner_job->job_id;
             $device_id = \Cookie::get('device-id');
-            $key = \Auth::user()->id.'-'.$device_id;
-            $value = Redis::hGet($sentTaskInfo,$key);
-            if(!$device_id){
+            $key = \Auth::user()->id . '-' . $device_id;
+            $value = Redis::hGet($sentTaskInfo, $key);
+            if (!$device_id) {
                 throw new \Exception ('device id has not set!');
             }
-            if($value == null){
-                $value = ['time'=>strtotime('now'),'count'=>1]; //time of sending current task
-            }
-            else{
-                $value = json_decode($value,true);
+            if ($value == null) {
+                $value = ['time' => strtotime('now'), 'count' => 1]; //time of sending current task
+            } else {
+                $value = json_decode($value, true);
                 $value['count'] = intVal($value['count']) + 1;
                 $value['time'] = strtotime('now');
             }
-            Redis::hSet($sentTaskInfo,$key,json_encode($value));
+            Redis::hSet($sentTaskInfo, $key, json_encode($value));
         }
 
 
         return $data;
-        
+
     }
 
-    public function getInitData($owner_job){
-        
+    public function getInitData($owner_job)
+    {
+
         //1.insert data to kafka 
         //2.insert first data to redis
         //3.send first data to client
         //4.update owner job status
-        $task=Task::where('type','map')->where('job_id',$owner_job->job_id)->first();
+        $task = Task::where('type', 'map')->where('job_id', $owner_job->job_id)->first();
 
-        $process_log_info=$owner_job->process_log;
-        if($process_log_info === null){
-            $process_log_info=[];
-        }else{
-            $process_log_info=json_decode($process_log_info, true);
+        $process_log_info = $owner_job->process_log;
+        if ($process_log_info === null) {
+            $process_log_info = [];
+        } else {
+            $process_log_info = json_decode($process_log_info, true);
         }
-        if(!isset($process_log_info['description'])){
-            $process_log_info['description']= ''; 
+        if (!isset($process_log_info['description'])) {
+            $process_log_info['description'] = '';
         }
-        if($task){
+        if ($task) {
 
             //get array of files from disk
             //if data_links is null get files from storage
-            if($owner_job->data_links === null || $owner_job->data_links === ''){
-                $files = Storage::disk('public')->files('/data/'.$owner_job->name.$owner_job->id);
+            if ($owner_job->data_links === null || $owner_job->data_links === '') {
+                $files = Storage::disk('public')->files('/data/' . $owner_job->name . $owner_job->id);
                 // dd($files,'stoage','/data/'.$owner_job->name.$owner_job->id);
-            }
-            else{
+            } else {
                 $files = preg_split('/\n|\r\n?/', $owner_job->data_links);
                 $files = array_filter($files, function ($value) {
                     $value = trim($value);
@@ -146,62 +145,61 @@ trait DataTrait{
                 });
             }
             // dd($files);
-            if(count($files)>0){
-                $first=[];
+            if (count($files) > 0) {
+                $first = [];
 
-                $topic=$owner_job->job->name.'-map';
-                $this->initConnector('produce',$topic);
+                $topic = $owner_job->job->name . '-map';
+                $this->initConnector('produce', $topic);
 
-                foreach($files as $index=>$file){
+                foreach ($files as $index => $file) {
 
-                    if($owner_job->data_links === null){
-                       $file='/'.$file; 
+                    if ($owner_job->data_links === null) {
+                        $file = '/' . $file;
                     }
-                
-                    $data=[
-                        'url'=>$file,
-                        'task_id'=>$task->id,
-                        'owner_job_id'=>$owner_job->id,
-                        'job_id'=>$owner_job->job_id,
-                        'index'=>$index
+
+                    $data = [
+                        'url' => $file,
+                        'task_id' => $task->id,
+                        'owner_job_id' => $owner_job->id,
+                        'job_id' => $owner_job->job_id,
+                        'index' => $index
                     ];
 
-                    if($index === 0){
-                        $first=$data;
-                    }else{
+                    if ($index === 0) {
+                        $first = $data;
+                    } else {
                         $this->produce($data);
                     }
                 }
 
                 //save first to redis
-                Redis::hSet('pendingMapData_'.$owner_job->job_id, $first['index'], json_encode($first)); //index is the same as data id in DB
+                Redis::hSet('pendingMapData_' . $owner_job->job_id, $first['index'], json_encode($first)); //index is the same as data id in DB
 
-                Cache::put('MapDataCount_'.$owner_job->job_id,count($files)-1,60000);
+                Cache::put('MapDataCount_' . $owner_job->job_id, count($files) - 1, 60000);
 
-               
-                $process_log_info['description'].= 'mapping process is started at '.Carbon::now();
-                
-                Cache::put('start_ownerJob_date_'.$owner_job->job_id,Carbon::now(),60000);
 
-                $owner_job->status='mapping';
-                $owner_job->process_log = json_encode($process_log_info); 
+                $process_log_info['description'] .= 'mapping process is started at ' . Carbon::now();
+
+                Cache::put('start_ownerJob_date_' . $owner_job->job_id, Carbon::now(), 60000);
+
+                $owner_job->status = 'mapping';
+                $owner_job->process_log = json_encode($process_log_info);
                 $owner_job->save();
                 // return $first
                 return $first;
-                
-            }else{
+
+            } else {
                 //change status to failed and add description reason of failing
-                $process_log_info['description'].=' - process is failed because there is no data file to process. date: '.Carbon::now();
+                $process_log_info['description'] .= ' - process is failed because there is no data file to process. date: ' . Carbon::now();
                 $owner_job->status = "failed";
-                $owner_job->process_log = json_encode($process_log_info); 
+                $owner_job->process_log = json_encode($process_log_info);
                 $owner_job->save();
                 //look for new owner job
                 return $this->getData($owner_job->job_id);
             }
 
-        }
-        else{
-            $process_log_info['description'].=' - there is no map task to start processing. date: '.Carbon::now(); 
+        } else {
+            $process_log_info['description'] .= ' - there is no map task to start processing. date: ' . Carbon::now();
             $owner_job->status = "failed";
             $owner_job->process_log = json_encode($process_log_info);
             $owner_job->save();
@@ -209,86 +207,85 @@ trait DataTrait{
 
     }
 
-    public function getMappingData($owner_job){
-        
+    public function getMappingData($owner_job)
+    {
+
         //2.if MapdataCount > 0     
-                // get data from kafka map topic
-                //send data to redis and client
+        // get data from kafka map topic
+        //send data to redis and client
         //3. else check redis: if exist in redis:
-                                                // send data from redis to client
-                            // else: update owner job status 
-                                    // reducing : call getReducingData 
-        $process_log_info=$owner_job->process_log;
-        if($process_log_info === null){
-            $process_log_info=[];
-        }else{
-            $process_log_info=json_decode($process_log_info, true);
+        // send data from redis to client
+        // else: update owner job status
+        // reducing : call getReducingData
+        $process_log_info = $owner_job->process_log;
+        if ($process_log_info === null) {
+            $process_log_info = [];
+        } else {
+            $process_log_info = json_decode($process_log_info, true);
         }
-        if(!isset($process_log_info['description'])){
-            $process_log_info['description']= ''; 
+        if (!isset($process_log_info['description'])) {
+            $process_log_info['description'] = '';
         }
 
-        $count = Cache::get('MapDataCount_'.$owner_job->job_id);
+        $count = Cache::get('MapDataCount_' . $owner_job->job_id);
 
-        $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
-        $reduce_method_exists=method_exists($service_path,'getReducingData');
+        $service_path = '\\App\\Services\\' . ucfirst($owner_job->job->name) . 'ParsingPattern';
+        $reduce_method_exists = method_exists($service_path, 'getReducingData');
         // dd($count);
-        if($count > 0){
-            
-            $topic=$owner_job->job->name.'-map';
-            $this->initConnector('consume',$topic);
-            $key_cache = $topic.'-last_offset';
-            $data = $this->consume(0,$key_cache);
+        if ($count > 0) {
+
+            $topic = $owner_job->job->name . '-map';
+            $this->initConnector('consume', $topic);
+            $key_cache = $topic . '-last_offset';
+            $data = $this->consume(0, $key_cache);
 
             // dd($data);
-            if($data !== null){
-                  // MapDataCount - 1
-                   Cache::put('MapDataCount_'.$owner_job->job_id,$count-1,60000);
+            if ($data !== null) {
+                // MapDataCount - 1
+                Cache::put('MapDataCount_' . $owner_job->job_id, $count - 1, 60000);
 
-                    Redis::hSet('pendingMapData_'.$owner_job->job_id, $data['index'], json_encode($data));
+                Redis::hSet('pendingMapData_' . $owner_job->job_id, $data['index'], json_encode($data));
 //                dd($data);
-                    return $data;
-            }
-            else{
-                Cache::put('MapDataCount_'.$owner_job->job_id,0,60000);
+                return $data;
+            } else {
+                Cache::put('MapDataCount_' . $owner_job->job_id, 0, 60000);
                 Cache::forget($key_cache);
-                $allValues = Redis::hVals('pendingMapData_'.$owner_job->job_id);
-                if(count($allValues) > 0){
-                    return json_decode($allValues[0],true); // transform to array
-                }
-                else{
-                    $process_log_info['description'].= ' - mapping is finished and reducing has started. date: '.Carbon::now();
+                $allValues = Redis::hVals('pendingMapData_' . $owner_job->job_id);
+                if (count($allValues) > 0) {
+                    return json_decode($allValues[0], true); // transform to array
+                } else {
+                    $process_log_info['description'] .= ' - mapping is finished and reducing has started. date: ' . Carbon::now();
                     $owner_job->status = 'reducing';
                     $owner_job->process_log = json_encode($process_log_info);
                     $owner_job->save();
-                    if($reduce_method_exists){
+                    if ($reduce_method_exists) {
                         return app($service_path)->getReducingData($owner_job);
                     }
                     return $this->getReducingData($owner_job);
                 }
             }
-          
-        }
-        else {
-            $allValues = Redis::hVals('pendingMapData_'.$owner_job->job_id);
-            if(count($allValues) > 0){
-                return json_decode($allValues[0],true);
-            }else{
-                $process_log_info['description'].= ' - mapping is finished and reducing has started. date: '.Carbon::now(); 
+
+        } else {
+            $allValues = Redis::hVals('pendingMapData_' . $owner_job->job_id);
+            if (count($allValues) > 0) {
+                return json_decode($allValues[0], true);
+            } else {
+                $process_log_info['description'] .= ' - mapping is finished and reducing has started. date: ' . Carbon::now();
                 $owner_job->status = 'reducing';
-                $owner_job->process_log = json_encode($process_log_info); 
+                $owner_job->process_log = json_encode($process_log_info);
                 $owner_job->save();
-                if($reduce_method_exists){
+                if ($reduce_method_exists) {
                     return app($service_path)->getReducingData($owner_job);
                 }
                 return $this->getReducingData($owner_job);
             }
-            
+
 
         }
     }
 
-    public function getReducingData($owner_job){
+    public function getReducingData($owner_job)
+    {
         //1. check waitingReduceData-job_id in redis
         //      if there is any data, pop first data (key , array of values) and push it in pendindReduceData-job_id
         //              and sent it to client
@@ -299,271 +296,269 @@ trait DataTrait{
         //      if there is any data sent it to client
         //      else change owner job status to done
         //3.  create file of final result
-       
-        $waiting_group='waitingReduceData_'.$owner_job->job_id;
-        $pending_group='pendingReduceData_'.$owner_job->job_id;
-        $currentConsumePartition='currentConsumePartition_'.$owner_job->job_id;
-        $keys=Redis::hKeys($waiting_group);
-        if(count($keys) > 0){
-            $key=$keys[0];
-            $data = Redis::hGet($waiting_group,$key);
 
-            Redis::hDel($waiting_group,$key);
-            Redis::hSet($pending_group,$key,$data);
-            return json_decode($data,true);
-        }else{
+        $waiting_group = 'waitingReduceData_' . $owner_job->job_id;
+        $pending_group = 'pendingReduceData_' . $owner_job->job_id;
+        $currentConsumePartition = 'currentConsumePartition_' . $owner_job->job_id;
+        $keys = Redis::hKeys($waiting_group);
+        if (count($keys) > 0) {
+            $key = $keys[0];
+            $data = Redis::hGet($waiting_group, $key);
+
+            Redis::hDel($waiting_group, $key);
+            Redis::hSet($pending_group, $key, $data);
+            return json_decode($data, true);
+        } else {
 
 
-            $topic=$owner_job->job->name.'-reduce';
+            $topic = $owner_job->job->name . '-reduce';
             // $consume_count_key =  $topic.'-consume-count';
             // $consume_count = Cache::get($consume_count_key);
             // if($consume_count === null){
             //     $consume_count = 0;
             // }
-            $task=Task::where('type','reduce')->where('job_id',$owner_job->job_id)->first();
+            $task = Task::where('type', 'reduce')->where('job_id', $owner_job->job_id)->first();
 
-           
+
             //check current partition
-            $partition=Cache::get($currentConsumePartition);
-            if($partition == null){
-                $partition=0;
+            $partition = Cache::get($currentConsumePartition);
+            if ($partition == null) {
+                $partition = 0;
             }
 
-           
-            if($partition < $this->reduce_partition_count){
-                
-                $this->initConnector('consume',$topic);
-                $all_result=[];
-                while($partition < $this->reduce_partition_count && count($all_result) ==0){
-                    $all_result=$this->cousumeAllMessage($partition);
+
+            if ($partition < $this->reduce_partition_count) {
+
+                $this->initConnector('consume', $topic);
+                $all_result = [];
+                while ($partition < $this->reduce_partition_count && count($all_result) == 0) {
+                    $all_result = $this->cousumeAllMessage($partition);
                     // $consume_count+=1;
                     // Cache::put($consume_count_key,$consume_count,60000);
                     $partition++;
                 }
 //                dd($all_result);
-                Cache::put($currentConsumePartition,$partition,60000);
-                if(count($all_result) == 0){
-                    return $this->getPendingData($owner_job,$pending_group,$currentConsumePartition);
+                Cache::put($currentConsumePartition, $partition, 60000);
+                if (count($all_result) == 0) {
+                    return $this->getPendingData($owner_job, $pending_group, $currentConsumePartition);
                 }
-                $pending_result=[];
-                $waiting_result=[];
-                foreach($all_result as $index=>$result){
-                    $data=explode('|',$result);
-                    if(count($data) === 2){
-                        $key=$data[0];
-                        $value=$data[1];
-                    }
-                    else{
-                        $arrayMessage = json_decode($result,true);
-                        if(isset($arrayMessage['key']) && isset($arrayMessage['value'])){
-                            $key=$arrayMessage['key'];
-                            $value=$arrayMessage['value'];
-                        }
-                        else{
+                $pending_result = [];
+                $waiting_result = [];
+                foreach ($all_result as $index => $result) {
+                    $data = explode('|', $result);
+                    if (count($data) === 2) {
+                        $key = $data[0];
+                        $value = $data[1];
+                    } else {
+                        $arrayMessage = json_decode($result, true);
+                        if (isset($arrayMessage['key']) && isset($arrayMessage['value'])) {
+                            $key = $arrayMessage['key'];
+                            $value = $arrayMessage['value'];
+                        } else {
                             throw new \Exception('result is not valid!');
-                        }                            
+                        }
                     }
-                    
-                    if($index == 0){
-                        $pending_result['key']=$key;
-                        $pending_result['value']=$value;
-                        $pending_result['task_id']=$task->id;
-                        $pending_result['owner_job_id']=$owner_job->id;
-                    }else{
-                        if($pending_result['key'] === $key){
-                            $pending_result['value'].=','.$value;
-                        }else{
-                             if(!isset($waiting_result[$key])){
-                                $waiting_result[$key]=[
-                                    'key'=>$key,
-                                    'value'=>$value,
-                                    'task_id'=>$task->id,
-                                    'owner_job_id'=>$owner_job->id
+
+                    if ($index == 0) {
+                        $pending_result['key'] = $key;
+                        $pending_result['value'] = $value;
+                        $pending_result['task_id'] = $task->id;
+                        $pending_result['owner_job_id'] = $owner_job->id;
+                    } else {
+                        if ($pending_result['key'] === $key) {
+                            $pending_result['value'] .= ',' . $value;
+                        } else {
+                            if (!isset($waiting_result[$key])) {
+                                $waiting_result[$key] = [
+                                    'key' => $key,
+                                    'value' => $value,
+                                    'task_id' => $task->id,
+                                    'owner_job_id' => $owner_job->id
                                 ];
-                                
-                             }else{
-                                $waiting_result[$key]['value'].=','.$value;
-                             }
-                         }
+
+                            } else {
+                                $waiting_result[$key]['value'] .= ',' . $value;
+                            }
+                        }
                     }
                 }
                 // dd($pending_result,'pending result');
-                Redis::hSet($pending_group,$pending_result['key'],json_encode($pending_result));
-                foreach($waiting_result as $key=>$result){
-                    Redis::hSet($waiting_group,$key,json_encode($result));
+                Redis::hSet($pending_group, $pending_result['key'], json_encode($pending_result));
+                foreach ($waiting_result as $key => $result) {
+                    Redis::hSet($waiting_group, $key, json_encode($result));
                 }
 
                 return $pending_result;
-            }else{
+            } else {
                 // Cache::put($currentConsumePartition,0);
-                return $this->getPendingData($owner_job,$pending_group,$currentConsumePartition);
+                return $this->getPendingData($owner_job, $pending_group, $currentConsumePartition);
             }
 
         }
 
     }
-    
+
     //last step check pending data
-    public function getPendingData($owner_job,$pending_group=null,$currentConsumePartition=null,$string_result=null){
-        
-       
+    public function getPendingData($owner_job, $pending_group = null, $currentConsumePartition = null, $string_result = null)
+    {
 
-        $keys=[];
-        if($pending_group !== null){
-             $keys=Redis::hKeys($pending_group);
+
+        $keys = [];
+        if ($pending_group !== null) {
+            $keys = Redis::hKeys($pending_group);
         }
-       
-                if(count($keys)>0){
-                    $key=$keys[0];
-                    return  json_decode(Redis::hGet($pending_group,$key),true);
-                }
-                else{
 
-                    if($owner_job->status == 'done'){
-                        return $this->getData($owner_job->job_id);
-                    }
+        if (count($keys) > 0) {
+            $key = $keys[0];
+            return json_decode(Redis::hGet($pending_group, $key), true);
+        } else {
 
-                    try{
+            if ($owner_job->status == 'done') {
+                return $this->getData($owner_job->job_id);
+            }
 
-                        if($string_result == null){
-                            $total_result = Redis::hGetAll('resultReduce_'.$owner_job->job_id);
-                            if($total_result === null){
-                                
-                                $owner_job->status='done';
-                                $owner_job->save();
-                                return $this->getData($owner_job->job_id);
-                            }
+            try {
 
-                            $service_path = '\\App\\Services\\'.ucfirst($owner_job->job->name).'ParsingPattern';
-                            $format_method_exists = method_exists($service_path,'formatFinalResult');
-                            if($format_method_exists){
-                                $string_result = app($service_path)->formatFinalResult($total_result);
-                            }
-                            else{
-                                $result_collection=collect($total_result)->sortKeys();
-                                $string_result = '';
-                                foreach($result_collection as $key=>$value){
-                                    $string_result .= $key. ' : ' .$value. "\n";
-                                }
-                            }
+                if ($string_result == null) {
+                    $total_result = Redis::hGetAll('resultReduce_' . $owner_job->job_id);
+                    if ($total_result === null) {
 
-                        }
-                        
-                        $final_result_path= 'results/'.$owner_job->job->name.'/'.$owner_job->name.'-'.$owner_job->id.'.txt'; //creating url 
-                        Storage::disk('public')->put($final_result_path, $string_result);//store data in file
-                        $owner_job->status='done';
-                        $owner_job->final_result_url = '/'.$final_result_path;
-                        $owner_job->save();
-                        
-                        if($currentConsumePartition !== null){
-                            Cache::put($currentConsumePartition,0,60000);
-                        }
-                        Cache::put('ownerJobFinished-'.$owner_job->job_id,$owner_job->id,60000);
-                        // $this->getOwnerJobProcessLog($owner_job);
-
-                        // // $topic=$owner_job->job->name.'-reduce';
-                        // // $consume_count_key =  $topic.'-consume-count';
-                        // // $consume_count = Cache::get($consume_count_key);
-                        // // $process_log_info['consume_count_reduce'] = $consume_count;
-
-                        // $this->logProcess($owner_job);
-
-                        // $this->reset($owner_job);
-
-                        return $this->getData($owner_job->job_id);
-                    }
-                    catch(\Exception $exp){
-                        $owner_job->status='failed';
+                        $owner_job->status = 'done';
                         $owner_job->save();
                         return $this->getData($owner_job->job_id);
                     }
-                    
+
+                    $service_path = '\\App\\Services\\' . ucfirst($owner_job->job->name) . 'ParsingPattern';
+                    $format_method_exists = method_exists($service_path, 'formatFinalResult');
+                    if ($format_method_exists) {
+                        $string_result = app($service_path)->formatFinalResult($total_result);
+                    } else {
+                        $result_collection = collect($total_result)->sortKeys();
+                        $string_result = '';
+                        foreach ($result_collection as $key => $value) {
+                            $string_result .= $key . ' : ' . $value . "\n";
+                        }
+                    }
+
                 }
+
+                $final_result_path = 'results/' . $owner_job->job->name . '/' . $owner_job->name . '-' . $owner_job->id . '.txt'; //creating url
+                Storage::disk('public')->put($final_result_path, $string_result);//store data in file
+                $owner_job->status = 'done';
+                $owner_job->final_result_url = '/' . $final_result_path;
+                $owner_job->save();
+
+                if ($currentConsumePartition !== null) {
+                    Cache::put($currentConsumePartition, 0, 60000);
+                }
+                Cache::put('ownerJobFinished-' . $owner_job->job_id, $owner_job->id, 60000);
+                // $this->getOwnerJobProcessLog($owner_job);
+
+                // // $topic=$owner_job->job->name.'-reduce';
+                // // $consume_count_key =  $topic.'-consume-count';
+                // // $consume_count = Cache::get($consume_count_key);
+                // // $process_log_info['consume_count_reduce'] = $consume_count;
+
+                // $this->logProcess($owner_job);
+
+                // $this->reset($owner_job);
+
+                return $this->getData($owner_job->job_id);
+            } catch (\Exception $exp) {
+                $owner_job->status = 'failed';
+                $owner_job->save();
+                return $this->getData($owner_job->job_id);
+            }
+
+        }
     }
 
-    public function getOwnerJobProcessLog($owner_job){
-            
-            $process_log_info=$owner_job->process_log;
-            if($process_log_info === null){
-                $process_log_info=[];
-            }else{
-                $process_log_info=json_decode($process_log_info, true);
-            }
-            if(!isset($process_log_info['description'])){
-                $process_log_info['description']= ''; 
-            }
-            $process_log_info['description'].= ' - owner job process has completed at: '. Carbon::now();
-                        
-            $start_ownerJob_date=Cache::get('start_ownerJob_date_'.$owner_job->job_id);
-                        
-            $process_log_info['total_ownerJob_duration'] = $start_ownerJob_date->floatDiffInSeconds(Carbon::now()); //time between first sent data and last response
-                        
-            $bandwith = 'client_occupied_bandwith_size_'.$owner_job->job_id;
-            $process_log_info['transformed_data_size'] = Cache::get($bandwith);
-            // $process_log_info['client_occupied_bandwidth'] .= ' bytes';
+    public function getOwnerJobProcessLog($owner_job)
+    {
 
-            $post_request_count = 'request_count_'.$owner_job->job_id;
-            $process_log_info['request_count'] = Cache::get($post_request_count);
+        $process_log_info = $owner_job->process_log;
+        if ($process_log_info === null) {
+            $process_log_info = [];
+        } else {
+            $process_log_info = json_decode($process_log_info, true);
+        }
+        if (!isset($process_log_info['description'])) {
+            $process_log_info['description'] = '';
+        }
+        $process_log_info['description'] .= ' - owner job process has completed at: ' . Carbon::now();
 
-            $response_data_count = 'response_count_'.$owner_job->job_id;
-            $process_log_info['response_count'] = Cache::get($response_data_count);
+        $start_ownerJob_date = Cache::get('start_ownerJob_date_' . $owner_job->job_id);
 
-            $server_process_duration_time = 'server_process_duration_time_'.$owner_job->job_id;
-            $process_log_info['total_server_process']=Cache::get($server_process_duration_time);
+        $process_log_info['total_ownerJob_duration'] = $start_ownerJob_date->floatDiffInSeconds(Carbon::now()); //time between first sent data and last response
 
-            $server_process_duration_time_detail = Cache::get('server_process_duration_time_detail_'.$owner_job->job_id);
-            $process_log_info['server_process_duration_time_detail']=$server_process_duration_time_detail;
+        $bandwith = 'client_occupied_bandwith_size_' . $owner_job->job_id;
+        $process_log_info['transformed_data_size'] = Cache::get($bandwith);
+        // $process_log_info['client_occupied_bandwidth'] .= ' bytes';
 
-            $process_log_info['metadata_request_size'] = $process_log_info['request_count']*1348;//1348 is size of meta data in request = header, token,...
-            $process_log_info['metadata_response_size'] = ($process_log_info['response_count']+1)*1200;//1200 is size of meta data in response // +1 is for the last response which doesnt count
-            $process_log_info['total_ocuupied_bandwidth'] = $process_log_info['metadata_request_size']+$process_log_info['metadata_response_size']+$process_log_info['transformed_data_size'];
+        $post_request_count = 'request_count_' . $owner_job->job_id;
+        $process_log_info['request_count'] = Cache::get($post_request_count);
 
-            return $process_log_info;
-            
+        $response_data_count = 'response_count_' . $owner_job->job_id;
+        $process_log_info['response_count'] = Cache::get($response_data_count);
+
+        $server_process_duration_time = 'server_process_duration_time_' . $owner_job->job_id;
+        $process_log_info['total_server_process'] = Cache::get($server_process_duration_time);
+
+        $server_process_duration_time_detail = Cache::get('server_process_duration_time_detail_' . $owner_job->job_id);
+        $process_log_info['server_process_duration_time_detail'] = $server_process_duration_time_detail;
+
+        $process_log_info['metadata_request_size'] = $process_log_info['request_count'] * 1348;//1348 is size of meta data in request = header, token,...
+        $process_log_info['metadata_response_size'] = ($process_log_info['response_count'] + 1) * 1200;//1200 is size of meta data in response // +1 is for the last response which doesnt count
+        $process_log_info['total_ocuupied_bandwidth'] = $process_log_info['metadata_request_size'] + $process_log_info['metadata_response_size'] + $process_log_info['transformed_data_size'];
+
+        return $process_log_info;
+
 
     }
 
-    public function redisDeleteAll($group){
+    public function redisDeleteAll($group)
+    {
         $keys = Redis::hKeys($group);
-        foreach($keys as $key){
-            Redis::hDel($group,$key);
+        foreach ($keys as $key) {
+            Redis::hDel($group, $key);
         }
     }
 
-    public function reset($owner_job){
-        $waiting_group='waitingReduceData_'.$owner_job->job_id;
+    public function reset($owner_job)
+    {
+        $waiting_group = 'waitingReduceData_' . $owner_job->job_id;
         $this->redisDeleteAll($waiting_group);
-        $pending_group='pendingReduceData_'.$owner_job->job_id;
+        $pending_group = 'pendingReduceData_' . $owner_job->job_id;
         $this->redisDeleteAll($pending_group);
-        $pending_map_data='pendingMapData_'.$owner_job->job_id;
+        $pending_map_data = 'pendingMapData_' . $owner_job->job_id;
         $this->redisDeleteAll($pending_map_data);
-        $pending_reduce_data='pendingReduceData_'.$owner_job->job_id;
+        $pending_reduce_data = 'pendingReduceData_' . $owner_job->job_id;
         $this->redisDeleteAll($pending_reduce_data);
-        $result_reduce='resultReduce_'.$owner_job->job_id;
+        $result_reduce = 'resultReduce_' . $owner_job->job_id;
         $this->redisDeleteAll($result_reduce);
-        $sentTaskInfo = 'sentTaskInfo-'.$owner_job->job_id;
+        $sentTaskInfo = 'sentTaskInfo-' . $owner_job->job_id;
         $this->redisDeleteAll($sentTaskInfo);
-        $receivedResultInfo = 'recievedResultInfo-'.$owner_job->job_id;
+        $receivedResultInfo = 'recievedResultInfo-' . $owner_job->job_id;
         $this->redisDeleteAll($receivedResultInfo);
 
-        $map_data_count='MapDataCount_'.$owner_job->job_id;
+        $map_data_count = 'MapDataCount_' . $owner_job->job_id;
         Cache::forget($map_data_count);
-        $currentConsumePartition='currentConsumePartition_'.$owner_job->job_id;
+        $currentConsumePartition = 'currentConsumePartition_' . $owner_job->job_id;
         Cache::forget($currentConsumePartition);
-        $start_ownerJob_date = 'start_ownerJob_date_'.$owner_job->job_id;
+        $start_ownerJob_date = 'start_ownerJob_date_' . $owner_job->job_id;
         Cache::forget($start_ownerJob_date);
-        $bandwith = 'client_occupied_bandwith_size_'.$owner_job->job_id;
+        $bandwith = 'client_occupied_bandwith_size_' . $owner_job->job_id;
         Cache::forget($bandwith);
-        $post_request_count = 'request_count_'.$owner_job->job_id;
+        $post_request_count = 'request_count_' . $owner_job->job_id;
         Cache::forget($post_request_count);
-        $response_data_count = 'response_count_'.$owner_job->job_id;
+        $response_data_count = 'response_count_' . $owner_job->job_id;
         Cache::forget($response_data_count);
-        $server_process_duration_time = 'server_process_duration_time_'.$owner_job->job_id;
+        $server_process_duration_time = 'server_process_duration_time_' . $owner_job->job_id;
         Cache::forget($server_process_duration_time);
-        Cache::forget('server_process_duration_time_detail_'.$owner_job->job_id);
-        $topic=$owner_job->job->name.'-map';
-        Cache::forget($topic.'-last_offset');
-        Cache::forget('ownerJobFinished-'.$owner_job->job_id);
+        Cache::forget('server_process_duration_time_detail_' . $owner_job->job_id);
+        $topic = $owner_job->job->name . '-map';
+        Cache::forget($topic . '-last_offset');
+        Cache::forget('ownerJobFinished-' . $owner_job->job_id);
         // $topic=$owner_job->job->name.'-reduce';
         // $consume_count_key =  $topic.'-consume-count';
         // Cache::forget($consume_count_key);
@@ -571,15 +566,16 @@ trait DataTrait{
         // Storage::disk('public')->deleteDirectory('/data/'.$owner_job->name.$owner_job->id);
 
     }
-    
-    public function logProcess($owner_job){
-        
-        $sentTaskInfo = Redis::hGetAll('sentTaskInfo-'.$owner_job->job_id);
-        $receivedResultInfo = Redis::hGetAll('recievedResultInfo-'.$owner_job->job_id);
-        
-        foreach($sentTaskInfo as $key=>$taskInfo){ // key = worker_id + device_id && taskInfo = time and count of sent task
-            
-            [$worker_id,$device_id] = explode('-',$key);
+
+    public function logProcess($owner_job)
+    {
+
+        $sentTaskInfo = Redis::hGetAll('sentTaskInfo-' . $owner_job->job_id);
+        $receivedResultInfo = Redis::hGetAll('recievedResultInfo-' . $owner_job->job_id);
+
+        foreach ($sentTaskInfo as $key => $taskInfo) { // key = worker_id + device_id && taskInfo = time and count of sent task
+
+            [$worker_id, $device_id] = explode('-', $key);
             // dd($key, $sentTaskInfo)
             $process_log = ProcessLog::where([
                 'worker_id' => $worker_id,
@@ -587,18 +583,17 @@ trait DataTrait{
                 'owner_job_id' => $owner_job->id])->first();
 
 
-            if($process_log == null){
+            if ($process_log == null) {
 
-                $taskInfo = json_decode($taskInfo,true);
+                $taskInfo = json_decode($taskInfo, true);
 
-                if(isset($receivedResultInfo[$key])){
+                if (isset($receivedResultInfo[$key])) {
 
-                    $resultInfo = json_decode($receivedResultInfo[$key],true); // array of time and count
-                    $successPercent = ($resultInfo['count']/$taskInfo['count'])*100;
-                    $avgProcessingDurationTime = $resultInfo['time']/$resultInfo['count']; //avg = processingDurationTime/resultCounts
+                    $resultInfo = json_decode($receivedResultInfo[$key], true); // array of time and count
+                    $successPercent = ($resultInfo['count'] / $taskInfo['count']) * 100;
+                    $avgProcessingDurationTime = $resultInfo['time'] / $resultInfo['count']; //avg = processingDurationTime/resultCounts
                     $resultCount = $resultInfo['count'];
-                }
-                else{
+                } else {
                     $successPercent = 0;
                     $avgProcessingDurationTime = 0;
                     $resultCount = 0;
@@ -611,13 +606,13 @@ trait DataTrait{
                         'owner_job_id' => $owner_job->id
                     ],
                     [
-                    //check if client can not do any task (it might client has stopped in one task) 
-                    'result_count' => $resultCount,
-                    'task_count'=> $taskInfo['count'],
-                    'success_percent' => $successPercent,
-                    'avg_processing_duration' => $avgProcessingDurationTime,
+                        //check if client can not do any task (it might client has stopped in one task)
+                        'result_count' => $resultCount,
+                        'task_count' => $taskInfo['count'],
+                        'success_percent' => $successPercent,
+                        'avg_processing_duration' => $avgProcessingDurationTime,
                     ]);
             }
-        }    
+        }
     }
 }

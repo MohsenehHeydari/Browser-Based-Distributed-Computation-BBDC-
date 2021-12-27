@@ -3159,31 +3159,47 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     doTask: function doTask() {
       var _this6 = this;
 
-      this.workingStatus = true; // create a function using 'data' as input name and currentTaskFile as funcion body
+      return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().mark(function _callee5() {
+        var vm, task;
+        return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                _this6.workingStatus = true;
+                vm = _this6; // create a function using 'data' as input name and currentTaskFile as funcion body
 
-      var task = new Function("data", this.currentTaskFile);
-      var result = task(this.currentDataFile);
-      console.log(result);
-      axios__WEBPACK_IMPORTED_MODULE_2___default().post("/worker/sendResult", {
-        result: result,
-        data: this.currentData,
-        job_id: this.$route.params.id
-      }).then(function (response) {
-        // console.log("hasNewtTask ", response.data.hasNewTask);
-        if (response.data.hasNewTask === 1 && _this6.stopComputationStatus !== true) {
-          _this6.setTaskAndData(response.data.nextData); // this.workingStatus = false;
+                task = new Function("data", _this6.currentTaskFile);
+                task(_this6.currentDataFile).then(function (result) {
+                  console.log(result);
+                  axios__WEBPACK_IMPORTED_MODULE_2___default().post("/worker/sendResult", {
+                    result: result,
+                    data: _this6.currentData,
+                    job_id: _this6.$route.params.id
+                  }).then(function (response) {
+                    // console.log("hasNewtTask ", response.data.hasNewTask);
+                    if (response.data.hasNewTask === 1 && _this6.stopComputationStatus !== true) {
+                      _this6.setTaskAndData(response.data.nextData); // this.workingStatus = false;
 
-        } else {
-          console.log("process is finished!", response.data);
-          _this6.workingStatus = false;
-        }
-      })["catch"](function (error) {
-        _this6.failedCount++;
+                    } else {
+                      console.log("process is finished!", response.data);
+                      _this6.workingStatus = false;
+                    }
+                  })["catch"](function (error) {
+                    _this6.failedCount++;
 
-        if (_this6.failedCount <= 20) {
-          _this6.setTaskAndData();
-        }
-      });
+                    if (_this6.failedCount <= 20) {
+                      _this6.setTaskAndData();
+                    }
+                  });
+                });
+
+              case 4:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5);
+      }))();
     }
   },
   mounted: function mounted() {}
