@@ -221,6 +221,7 @@ import axios from "axios";
                                     // this.workingStatus = false;
                                 } else {
                                     console.log("process is finished!", response.data);
+                                    this.tempData={};
                                     this.workingStatus = false;
                                 }
                             })
