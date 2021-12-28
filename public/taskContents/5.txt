@@ -1,5 +1,6 @@
 
-data=data.split('-');
+return new Promise(resolve=>{
+    data=data.split('-');
 
     let min=+data[0];
     let max=+data[1];
@@ -35,3 +36,5 @@ data=data.split('-');
         }
     }
     return result;
+
+})

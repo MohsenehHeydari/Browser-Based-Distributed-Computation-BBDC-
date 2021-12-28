@@ -1,5 +1,5 @@
-
-   let result = '';
+return new Promise(resolve=>{
+    let result = '';
         data=data.replace(/\s/g, "x");
         let arrayResult=data.split('x');
         arrayResult.forEach((line)=>{
@@ -28,4 +28,5 @@
             }
         });
         
-        return result;
+     resolve(result);
+})

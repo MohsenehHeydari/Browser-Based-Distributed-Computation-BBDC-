@@ -128,7 +128,8 @@ class MatrixMultiplication2ParsingPattern{
             $row_data.=implode(',',$row);
             $row_data.="\n";
             foreach ($second_matrix_string_data as $chunk_index=>$matrix_string_datum){
-                $second_url = url('data/' . $request->input('name') . $ownerJob->id . '/second/' .($chunk_index+1). '.txt');
+                $second_url = '/data/' . $request->input('name') . $ownerJob->id . '/second/' .($chunk_index+1). '.txt';
+                // $second_url = url('data/' . $request->input('name') . $ownerJob->id . '/second/' .($chunk_index+1). '.txt');
                 $string_result=$row_data.$second_url;
                 $url = 'data/' . $request->input('name') . $ownerJob->id . '/' . $row_index .'-'.($chunk_index+1). '.txt';
                 Storage::disk('public')->put($url, $string_result);

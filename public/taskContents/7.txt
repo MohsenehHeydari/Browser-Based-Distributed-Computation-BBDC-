@@ -4,14 +4,14 @@ return new Promise((resolve)=>{
     let [rowInfo, columnsUrl] = arrayResult;
     //console.log(rowInfo, columnsUrl, 'result');
 
-    let secondMatrixData = localStorage.getItem(columnsUrl);
-     //console.log(secondMatrixData,'secondMatrixData');
+    //let secondMatrixData = localStorage.getItem(columnsUrl);
+    let secondMatrixData = null
     if (secondMatrixData === null) {
         axios.get(columnsUrl)
             .then(response=>{
 
                 let secondMatrixData=response.data;
-                localStorage.setItem(columnsUrl, secondMatrixData);
+                //localStorage.setItem(columnsUrl, secondMatrixData);
                 resolve(getResult(rowInfo,secondMatrixData));
             });
     }else {

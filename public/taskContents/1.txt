@@ -1,4 +1,5 @@
-let result={}
+return new Promise(resolve=>{
+    let result={}
 let output="";
 
     data.replace(/([~!@#$%^&*↵()_+=`{}\s\[\]\|\\:;'<>",.\/? ])+/g, '-').replace(/^(-)+|(-)+$/g,'').split('-').forEach( word => {
@@ -14,4 +15,5 @@ let output="";
     Object.keys(result).forEach(key=>{
        output+=key+'|'+result[key]+'&';
     });
-return output;
+resolve(output);
+})

@@ -1,4 +1,5 @@
-        let result=''
+return new Promise(resolve=>{
+    let result=''
         data=data.replace(/\s/g, "x");
         let columnData=data.split('x');
         columnData.forEach(cellData=>{
@@ -19,3 +20,4 @@
             }
         });
          return result;
+})

@@ -17,8 +17,8 @@ app.get('/', (req, resp) => {
 // server.listen(port, () => {
 //     console.log('server is listening to port : ' + port);
 // });
-// server.listen(port, '192.168.1.117');
-server.listen(port, 'localhost');
+server.listen(port, '192.168.1.204');
+// server.listen(port, 'localhost');
 // server.listen(port, '0.0.0.0');
 
 console.log('server is listening  ' + port);
