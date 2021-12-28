@@ -26,6 +26,7 @@ import axios from "axios";
                 tasks:[],
                 socket: null,
                 failedCount: 0,
+                tempData:{}
 
             }
         },
@@ -71,8 +72,8 @@ import axios from "axios";
                 this.workingStatus = false;
             },
             startSocketConnection() {
-                this.socket = io.connect("http://192.168.1.204:400", {
-                    // this.socket = io.connect("localhost:400", {
+                // this.socket = io.connect("http://192.168.1.204:400", {
+                    this.socket = io.connect("localhost:400", {
                     transports: ["websocket"],
                 });
                 let user_data = {
@@ -201,7 +202,7 @@ import axios from "axios";
             },
             async doTask() {
                 this.workingStatus = true;
-                let vm=this;
+                Window.vm=this;
                 // create a function using 'data' as input name and currentTaskFile as funcion body
                 let task = new Function("data", this.currentTaskFile);
                 task(this.currentDataFile)
