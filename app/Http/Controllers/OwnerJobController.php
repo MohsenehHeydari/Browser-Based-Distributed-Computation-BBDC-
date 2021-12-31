@@ -104,18 +104,18 @@ class OwnerJobController extends Controller
             }
             if(count($available_devices) > 0) {
                 $data = \DB::table('process_logs')
-//                    ->join('devices', 'devices.id', '=', 'process_logs.device_id')
+                    ->join('devices', 'devices.id', '=', 'process_logs.device_id')
                     ->whereIn('device_id', $available_devices)
                     ->select([
                         \DB::raw('sum(result_count) as total_result_count'),
                         \DB::raw('AVG(success_percent) as avg_success_percent'),
                         \DB::raw('AVG(avg_processing_duration) as avg_processing_duration'), //speed of doing task
                         'device_id',
-//                        'devices.CPU',
-//                        'devices.RAM',
-//                        'devices.battery',
+                        'devices.CPU',
+                        'devices.RAM',
+                        'devices.battery',
                     ])
-//                    ->groupBy('device_id', 'devices.CPU', 'devices.RAM', 'devices.battery')
+                    ->groupBy('device_id', 'devices.CPU', 'devices.RAM', 'devices.battery')
                     ->groupBy('device_id')
                     ->get();
 
@@ -147,9 +147,9 @@ class OwnerJobController extends Controller
                 foreach ($data as $index => $d) {
 
                     $rank = 0;
-//                    $rank += (7 * $d->CPU) / 100; // cpu has 7 out of 100 score
-//                    $rank += (7 * $d->RAM) / 100; // ram has 7/100 score
-//                    $rank += (7 * $d->battery) / 100; // battery has 7/100 score
+                    $rank += (7 * $d->CPU) / 100; // cpu has 7 out of 100 score
+                    $rank += (7 * $d->RAM) / 100; // ram has 7/100 score
+                    $rank += (7 * $d->battery) / 100; // battery has 7/100 score
                     $rank += (29 * $d->avg_success_percent) / 100; // success_percent has 29/100 score
 
                     // rank of result count =(current_device_result_count / max of result_count) * 25

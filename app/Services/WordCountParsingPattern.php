@@ -15,7 +15,7 @@ class WordCountParsingPattern {
     
     public function createFiles($request, $ownerJob){
         $page = '';
-        $line_count = 800; 
+        $line_count = 800;
         //get file content
         // decomposition pattern for wordCount
         $contents = file_get_contents($request->file('data_file')->getRealPath());
@@ -29,15 +29,17 @@ class WordCountParsingPattern {
                 return strlen($value) > 0;
             });
             $page_number = 0;
+            $index = 0;
             $counter = 1;
             $file_line_count = count($lines);
-            foreach ($lines as $index=>$line) {
+            foreach ($lines as $line) {
                 // $line=str_replace(['{','}',',',';','[',']','?',':','.','$','_','-','(',')','"',"'",'/'],' ',$line);
                 // $line = preg_replace('/([~!@#$%^&*()_+=`{}\[\]\|\\\:;\'<>",.\/? -])+/i'," ",$line);
                 // $line= trim($line);
                 //store lines to file
                 $page .= $line."\n";
                 if($counter > $line_count || $index == $file_line_count-1){
+                    echo ("||||||||||||\n");
                     $url = 'data/' . $request->input('name') . $ownerJob->id . '/' . $page_number . '.txt';
                     Storage::disk('public')->put($url, $page);
                     $page_number++;
@@ -45,7 +47,8 @@ class WordCountParsingPattern {
                     $page = '';
                 }else{
                     $counter++;
-                } 
+                }
+                $index++;
                 
             }
             return $page_number;

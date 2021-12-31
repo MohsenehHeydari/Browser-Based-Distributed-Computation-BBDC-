@@ -3183,6 +3183,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
                     } else {
                       console.log("process is finished!", response.data);
+                      _this6.tempData = {};
                       _this6.workingStatus = false;
                     }
                   })["catch"](function (error) {
