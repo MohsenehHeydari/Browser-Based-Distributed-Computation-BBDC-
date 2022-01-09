@@ -76,15 +76,8 @@ class TestController extends Controller
             $topic=$job->name.'-map';
             Cache::forget( $topic.'-last_offset');
             Cache::forget('ownerJobFinished-'.$job->id);
-        
-            // $topic=$job->name.'-reduce';
-            // $consume_count_key =  $topic.'-consume-count';
-            // Cache::forget($consume_count_key);
 
             $partitions_count=4;
-//            if($job->name === 'matrixMultiplication'){
-//                $partitions_count=100;
-//            }
             $this->initConnector('consume', $job->name.'-reduce');
             for ($i=0;$i<$partitions_count;$i++){
                 $this->cousumeAllMessage($i,false);
@@ -93,20 +86,11 @@ class TestController extends Controller
 
             $this->initConnector('consume', $job->name.'-map');
             $this->cousumeAllMessage(0,false);
-            // $owner_jobs = OwnerJob::where('job_id',$job->id)->get();
-            // foreach($owner_jobs as $owner_job){
-            //     if($owner_job){
-            //         $owner_job->status = 'init';
-            //         $owner_job->process_log = '';
-            //         $owner_job->save();
-            //     }
-            // }
 
             $logs=ProcessLog::get()->pluck('id')->toArray();
             ProcessLog::destroy($logs);
 
         }
-
         $owner_jobs = OwnerJob::get();
         foreach($owner_jobs as $owner_job){
             if($owner_job){

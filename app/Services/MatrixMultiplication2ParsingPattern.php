@@ -23,11 +23,12 @@ class MatrixMultiplication2ParsingPattern{
            $contents = stream_get_contents(fopen($request->data_link, "rb"));
             // dd($contents);
         }
-       
+
         $lines = preg_split('/\n|\r\n?/', $contents);
         $lines = array_filter($lines, function ($value) {
             return strlen($value) > 0;
         });
+
 
         $first_matrix_data = [];
         $second_matrix_data = [];

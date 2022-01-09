@@ -167,7 +167,7 @@ import axios from "axios";
                    return this.currentData;
                    
                 } catch (error) {
-                    console.log('data file is not valid!')
+                    console.log('data file is not valid!');
                     return null;
                 }
 
@@ -205,8 +205,12 @@ import axios from "axios";
                 Window.vm=this;
                 // create a function using 'data' as input name and currentTaskFile as funcion body
                 let task = new Function("data", this.currentTaskFile);
+                let startTime = performance.now();
                 task(this.currentDataFile)
                     .then(result=>{
+                        let endTime = performance.now();
+
+                        console.log(`Call to task took ${(endTime - startTime)/1000} seconds`);
                         console.log(result);
                         axios
                             .post("/worker/sendResult", {
@@ -217,7 +221,8 @@ import axios from "axios";
                             .then((response) => {
                                 // console.log("hasNewtTask ", response.data.hasNewTask);
                                 if (response.data.hasNewTask === 1 && this.stopComputationStatus !== true) {
-                                    this.setTaskAndData(response.data.nextData);
+                                    this.$emit('hasNewTask',response.data.nextData)
+                                    //this.setTaskAndData(response.data.nextData);
                                     // this.workingStatus = false;
                                 } else {
                                     console.log("process is finished!", response.data);
@@ -240,7 +245,9 @@ import axios from "axios";
             },
         },
         mounted(){
-            
+            this.$on('hasNewTask',function (data) {
+                this.setTaskAndData(data);
+            })
         }
     }
 </script>

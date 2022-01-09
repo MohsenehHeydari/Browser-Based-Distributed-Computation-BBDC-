@@ -1,5 +1,8 @@
 return new Promise(resolve=>{
-    let result = '';
+//console.time('start process');
+
+
+    let result = {};
         data=data.replace(/\s/g, "x");
         let arrayResult=data.split('x');
         arrayResult.forEach((line)=>{
@@ -19,7 +22,16 @@ return new Promise(resolve=>{
                                     second = friends[i];
                                 }
                                 let key = first+','+second;
-                                result+=key+'|'+userID+'&';
+                                if(result[key] !== undefined){
+                                     if(! result[key].includes(userID)){
+                                         result[key].push(userID);
+                                         //console.log(result[key],key);
+                                     }
+                                }else{
+
+                                    result[key]=[userID];
+                                }
+                                //result+=key+'|'+userID+'&';
                             }
                         }
                     }
@@ -27,6 +39,17 @@ return new Promise(resolve=>{
         
             }
         });
-        
-     resolve(result);
+
+        let output="";
+        let count=0;
+         console.log(Object.keys(result).length,'total result')
+        Object.keys(result).forEach(key=>{
+            if(result[key].length>1){count++}
+            let value = result[key].join(',');
+            output+=key+'|'+result[key]+'&';
+        });
+        console.log(count,'counter')
+
+       //console.timeEnd('end process);
+     resolve(output);
 })

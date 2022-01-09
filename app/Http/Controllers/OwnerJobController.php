@@ -39,6 +39,9 @@ class OwnerJobController extends Controller
             $data_links = file_get_contents($request->file('data_file')->getRealPath());
         }
 
+
+
+
         $ownerJob=\DB::transaction(function()use($request,$data_links){
             $date = explode('/', $request->expire_date);
             $date = Carbon::create($date[0], $date[1], $date[2]);
@@ -54,14 +57,20 @@ class OwnerJobController extends Controller
             ]);
             
             // choose a service dynamically
-            $job = Job::find($request->job_id);
-            $path = '\\App\\Services\\'.ucfirst($job->name).'ParsingPattern';
-            $data_count = app($path)->createFiles($request, $ownerJob); // app method create an instance of $path
-            // another way to use defined service:
+            try{
+                $job = Job::find($request->job_id);
+                $path = '\\App\\Services\\'.ucfirst($job->name).'ParsingPattern';
+
+                $data_count = app($path)->createFiles($request, $ownerJob); // app method create an instance of $path
+                // another way to use defined service:
                 // $service = new $path();
                 // $files = $service->createFiles($request, $ownerJob);
-            $ownerJob->data_count = $data_count;
-            $ownerJob->save();
+                $ownerJob->data_count = $data_count;
+                $ownerJob->save();
+            }
+            catch(\Exception $exception){
+                dd($exception->getMessage());
+            }
 
             return $ownerJob;
 

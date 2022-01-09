@@ -3161,7 +3161,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       var _this6 = this;
 
       return _asyncToGenerator( /*#__PURE__*/_babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().mark(function _callee5() {
-        var task;
+        var task, startTime;
         return _babel_runtime_regenerator__WEBPACK_IMPORTED_MODULE_0___default().wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
@@ -3170,7 +3170,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 Window.vm = _this6; // create a function using 'data' as input name and currentTaskFile as funcion body
 
                 task = new Function("data", _this6.currentTaskFile);
+                startTime = performance.now();
                 task(_this6.currentDataFile).then(function (result) {
+                  var endTime = performance.now();
+                  console.log("Call to task took ".concat((endTime - startTime) / 1000, " seconds"));
                   console.log(result);
                   axios__WEBPACK_IMPORTED_MODULE_2___default().post("/worker/sendResult", {
                     result: result,
@@ -3179,7 +3182,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   }).then(function (response) {
                     // console.log("hasNewtTask ", response.data.hasNewTask);
                     if (response.data.hasNewTask === 1 && _this6.stopComputationStatus !== true) {
-                      _this6.setTaskAndData(response.data.nextData); // this.workingStatus = false;
+                      _this6.$emit('hasNewTask', response.data.nextData); //this.setTaskAndData(response.data.nextData);
+                      // this.workingStatus = false;
 
                     } else {
                       console.log("process is finished!", response.data);
@@ -3195,7 +3199,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   });
                 });
 
-              case 4:
+              case 5:
               case "end":
                 return _context5.stop();
             }
@@ -3204,7 +3208,11 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       }))();
     }
   },
-  mounted: function mounted() {}
+  mounted: function mounted() {
+    this.$on('hasNewTask', function (data) {
+      this.setTaskAndData(data);
+    });
+  }
 });
 
 /***/ }),
