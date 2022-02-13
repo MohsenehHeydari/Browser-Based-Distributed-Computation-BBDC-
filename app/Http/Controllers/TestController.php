@@ -87,16 +87,16 @@ class TestController extends Controller
             $this->initConnector('consume', $job->name.'-map');
             $this->cousumeAllMessage(0,false);
 
-            $logs=ProcessLog::get()->pluck('id')->toArray();
-            ProcessLog::destroy($logs);
+            // $logs=ProcessLog::get()->pluck('id')->toArray();
+            // ProcessLog::destroy($logs);
 
         }
         $owner_jobs = OwnerJob::get();
         foreach($owner_jobs as $owner_job){
             if($owner_job){
-                $owner_job->status = 'init';
-                $owner_job->process_log = '';
-                $owner_job->save();
+                // $owner_job->status = 'init';
+                // $owner_job->process_log = '';
+                // $owner_job->save();
             }
             Cache::forget('logStatus-'.$owner_job->id);
         }
@@ -116,7 +116,7 @@ class TestController extends Controller
 
     public function getBestDevice()
     {
-         $owner_job = OwnerJob::findOrFail(39);
+           $owner_job = OwnerJob::findOrFail(2);
         // choose best device among online users which choose this job and are idle
         $online_users = json_decode(Redis::get('online_users'), true);
         if($online_users){
@@ -128,18 +128,18 @@ class TestController extends Controller
             }
             if(count($available_devices) > 0) {
                 $data = \DB::table('process_logs')
-//                    ->join('devices', 'devices.id', '=', 'process_logs.device_id')
+                    ->join('devices', 'devices.id', '=', 'process_logs.device_id')
                     ->whereIn('device_id', $available_devices)
                     ->select([
                         \DB::raw('sum(result_count) as total_result_count'),
                         \DB::raw('AVG(success_percent) as avg_success_percent'),
                         \DB::raw('AVG(avg_processing_duration) as avg_processing_duration'), //speed of doing task
                         'device_id',
-//                        'devices.CPU',
-//                        'devices.RAM',
-//                        'devices.battery',
+                        'devices.CPU',
+                        'devices.RAM',
+                        'devices.battery',
                     ])
-//                    ->groupBy('device_id', 'devices.CPU', 'devices.RAM', 'devices.battery')
+                    ->groupBy('device_id', 'devices.CPU', 'devices.RAM', 'devices.battery')
                     ->groupBy('device_id')
                     ->get();
 
@@ -171,9 +171,9 @@ class TestController extends Controller
                 foreach ($data as $index => $d) {
 
                     $rank = 0;
-//                    $rank += (7 * $d->CPU) / 100; // cpu has 7 out of 100 score
-//                    $rank += (7 * $d->RAM) / 100; // ram has 7/100 score
-//                    $rank += (7 * $d->battery) / 100; // battery has 7/100 score
+                    $rank += (7 * $d->CPU) / 100; // cpu has 7 out of 100 score
+                    $rank += (7 * $d->RAM) / 100; // ram has 7/100 score
+                    $rank += (7 * $d->battery) / 100; // battery has 7/100 score
                     $rank += (29 * $d->avg_success_percent) / 100; // success_percent has 29/100 score
 
                     // rank of result count =(current_device_result_count / max of result_count) * 25
@@ -187,21 +187,28 @@ class TestController extends Controller
                     $data[$index]->rank = $rank;
                 }
                 $max_socket_count = 2;
-                $socket_index = 0;
+                $socket_index=0;
+                $device_socket_index=0;
                 $best_sockets = [];
+                $max_best_sockets_count = 10;
                 // if there is no device with history of doing this job and it is the first time to do this job
+
                 if (count($data) > 0) {
                     $data = collect($data)->sortByDesc('rank');
                     $grouped_online_users = collect($online_users)->groupBy('device_id');
                     // check if there is one device with multi socket connection(maybe it opens more than one tab in browser)
+                //    dd($data);
                     foreach ($data as $d) { //data is sorted base on rank
+                        $device_socket_index = 0;
                         $online_user = $grouped_online_users[$d->device_id]; //online_user = items of data(best devices)
-                        if ($socket_index < $max_socket_count) {
+                        if ($socket_index < $max_best_sockets_count) {
                             foreach ($online_user as $user) {
-                                if ($socket_index < $max_socket_count) {
+                                if ($device_socket_index < $max_socket_count) {
                                     $best_sockets[] = $user['socket_id'];
                                     $socket_index++;
+                                    $device_socket_index++;
                                 }else{
+                                    $device_socket_index=0;
                                     break;
                                 }
                             }
@@ -210,16 +217,20 @@ class TestController extends Controller
                         }
                     }
                 }
-                if(count($best_sockets) < $max_socket_count){
+                //add other devices to best_sockets if best_sockets is not full
+                if(count($best_sockets) < $max_best_sockets_count){
                     foreach($online_users as $online_user){
-                        if ($socket_index < $max_socket_count) {
-                            if(!in_array($online_user['socket_id'],$best_sockets)){//check duplications of socket id
-                                $best_sockets[] = $online_user['socket_id'];
-                                $socket_index++;
-                            }
-                        }else{
-                            break;
+                        if(intval($online_user['job_id']) == $owner_job->job_id && $online_user['working_status'] == false){
+                            if ($socket_index < $max_best_sockets_count) {
+                                if(!in_array($online_user['socket_id'],$best_sockets)){//check duplications of socket id
+                                    $best_sockets[] = $online_user['socket_id'];
+                                    $socket_index++;
+                                }
+                                }else{
+                                    break;
+                                }
                         }
+                        
                     }
                 }
             }else{

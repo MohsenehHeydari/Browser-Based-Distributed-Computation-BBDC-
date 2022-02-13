@@ -101,7 +101,7 @@ class OwnerJobController extends Controller
 
     public function getBestDevice($owner_job)
     {
-//        $owner_job = OwnerJob::findOrFail(39);
+        //    $owner_job = OwnerJob::findOrFail(4);
         // choose best device among online users which choose this job and are idle
         $online_users = json_decode(Redis::get('online_users'), true);
         if($online_users){
@@ -171,22 +171,29 @@ class OwnerJobController extends Controller
 
                     $data[$index]->rank = $rank;
                 }
-                $max_socket_count = 2;
-                $socket_index = 0;
+                $max_socket_count = 1;
+                $socket_index=0;
+                $device_socket_index=0;
                 $best_sockets = [];
+                $max_best_sockets_count = 4;
                 // if there is no device with history of doing this job and it is the first time to do this job
+
                 if (count($data) > 0) {
                     $data = collect($data)->sortByDesc('rank');
                     $grouped_online_users = collect($online_users)->groupBy('device_id');
                     // check if there is one device with multi socket connection(maybe it opens more than one tab in browser)
+                //    dd($data);
                     foreach ($data as $d) { //data is sorted base on rank
+                        $device_socket_index = 0;
                         $online_user = $grouped_online_users[$d->device_id]; //online_user = items of data(best devices)
-                        if ($socket_index < $max_socket_count) {
+                        if ($socket_index < $max_best_sockets_count) {
                             foreach ($online_user as $user) {
-                                if ($socket_index < $max_socket_count) {
+                                if ($device_socket_index < $max_socket_count) {
                                     $best_sockets[] = $user['socket_id'];
                                     $socket_index++;
+                                    $device_socket_index++;
                                 }else{
+                                    $device_socket_index=0;
                                     break;
                                 }
                             }
@@ -195,16 +202,20 @@ class OwnerJobController extends Controller
                         }
                     }
                 }
-                if(count($best_sockets) < $max_socket_count){
+                //add other devices to best_sockets if best_sockets is not full
+                if(count($best_sockets) < $max_best_sockets_count){
                     foreach($online_users as $online_user){
-                        if ($socket_index < $max_socket_count) {
-                            if(!in_array($online_user['socket_id'],$best_sockets)){//check duplications of socket id
-                                $best_sockets[] = $online_user['socket_id'];
-                                $socket_index++;
-                            }
-                        }else{
-                            break;
+                        if(intval($online_user['job_id']) == $owner_job->job_id && $online_user['working_status'] == false){
+                            if ($socket_index < $max_best_sockets_count) {
+                                if(!in_array($online_user['socket_id'],$best_sockets)){//check duplications of socket id
+                                    $best_sockets[] = $online_user['socket_id'];
+                                    $socket_index++;
+                                }
+                                }else{
+                                    break;
+                                }
                         }
+                        
                     }
                 }
             }else{

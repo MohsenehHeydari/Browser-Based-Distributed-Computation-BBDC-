@@ -106,7 +106,7 @@ class BandwidthAssessment
             // dd($owner_job_id, $owner_job->status);
             if($owner_job->status === 'done'){
 
-                if( (Cache::get('logStatus-'.$owner_job_id)) == null){
+                if((Cache::get('logStatus-'.$owner_job_id)) == null){
                 
                 $data_trait_service = new DataTraitService();
                 $process_log_info = $data_trait_service->getOwnerJobProcessLog($owner_job);

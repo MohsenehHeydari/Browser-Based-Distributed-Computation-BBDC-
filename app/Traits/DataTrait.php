@@ -398,7 +398,7 @@ trait DataTrait
 
     }
 
-    //last step check pending data
+    //last step: check pending data
     public function getPendingData($owner_job, $pending_group = null, $currentConsumePartition = null, $string_result = null)
     {
 

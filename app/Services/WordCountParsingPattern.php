@@ -15,7 +15,7 @@ class WordCountParsingPattern {
     
     public function createFiles($request, $ownerJob){
         $page = '';
-        $line_count = 800;
+        $line_count = 22000;
         //get file content
         // decomposition pattern for wordCount
         $contents = file_get_contents($request->file('data_file')->getRealPath());

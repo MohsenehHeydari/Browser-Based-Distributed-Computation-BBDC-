@@ -17,8 +17,8 @@ app.get('/', (req, resp) => {
 // server.listen(port, () => {
 //     console.log('server is listening to port : ' + port);
 // });
-// server.listen(port, '192.168.1.204');
-server.listen(port, 'localhost');
+server.listen(port, '192.168.1.132');
+// server.listen(port, 'localhost');
 // server.listen(port, '0.0.0.0');
 
 console.log('server is listening  ' + port);
@@ -71,19 +71,19 @@ io.on('connection', (socket) => {
         updateOnlineUsers();
         
     });
-    socket.on('updateWorkingStatus', (data) => {
-       let user=users[data.user_id];
-       user.socket.forEach((item)=>{
-           if(item.socket_id === socket.id){
-               item.working_status=data.working_status;
-               console.log('user '+user.user_id + ' updated');
-               console.log('working_status: ' + item.working_status);
+    // socket.on('updateWorkingStatus', (data) => {
+    //    let user=users[data.user_id];
+    //    user.socket.forEach((item)=>{
+    //        if(item.socket_id === socket.id){
+    //            item.working_status=data.working_status;
+    //            console.log('user '+user.user_id + ' updated');
+    //            console.log('working_status: ' + item.working_status);
 
         
-           }
-       })
+    //        }
+    //    })
         
-    });
+    // });
 
     socket.on('disconnect', function () {
        

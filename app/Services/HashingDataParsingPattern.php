@@ -16,7 +16,7 @@ class HashingDataParsingPattern
     public function createFiles($request, $ownerJob)
     {
         $page = '';
-        $line_count = 100;
+        $line_count = 200000;
         //get file content
         // decomposition pattern for wordCount
         $contents = file_get_contents($request->file('data_file')->getRealPath());
@@ -67,7 +67,7 @@ class HashingDataParsingPattern
             $exists_status=Redis::hExists('pendingMapData_'.$request->job_id, $request->data['index']);
             if($exists_status){
 
-                $results= $request->data['index'] .' : '.$results."\n";
+                // $results;
                 Redis::hDel('pendingMapData_'.$request->job_id, $request->data['index']);
                 Redis::hSet('resultReduce_'.$request->job_id, $request->data['index'],$results);
             }
@@ -88,8 +88,9 @@ class HashingDataParsingPattern
         $result_collection = collect($total_result)->sortKeys();
         $string_result = '';
         foreach ($result_collection as  $value) {
-            $string_result .=  $value . "\n";
+            $string_result .=  $value ;
         }
+        $string_result=md5($string_result);
         return $this->getPendingData($owner_job,null,null,$string_result);
 
     }

@@ -72,8 +72,8 @@ import axios from "axios";
                 this.workingStatus = false;
             },
             startSocketConnection() {
-                // this.socket = io.connect("http://192.168.1.204:400", {
-                    this.socket = io.connect("localhost:400", {
+                this.socket = io.connect("http://192.168.1.132:400", {
+                    // this.socket = io.connect("localhost:400", {
                     transports: ["websocket"],
                 });
                 let user_data = {
@@ -211,7 +211,7 @@ import axios from "axios";
                         let endTime = performance.now();
 
                         console.log(`Call to task took ${(endTime - startTime)/1000} seconds`);
-                        console.log(result);
+                        // console.log(result);
                         axios
                             .post("/worker/sendResult", {
                                 result: result,
